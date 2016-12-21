@@ -2,6 +2,8 @@
 Created on Dec 17, 2016
 
 @author: jason
+
+THis is just my way of making the REST stuff work
 '''
 from application.models import Plant,Customer,GrowWeek,PlantWeek,Supplier, Concept, ConceptPlant, ConceptReserve,PlantGrow,ConceptWeek
 
