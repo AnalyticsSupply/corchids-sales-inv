@@ -1,0 +1,15 @@
+{% import 'macros.html' as frm_hlp %}
+<div class="modal fade" id="new-stop-modal">
+    <div class="modal-dialog">
+    <div class="modal-content">
+    <div class="modal-header">
+        <button class="close" data-dismiss="modal">&times;</button>
+        <h3>Add A Stop</h3>
+    </div>
+    <div class="modal-body">
+       {{ frm_hlp.render_form(form, form_id='new-stop-form',action_url=url_for('show_route',route_id=route.key.id()), action_text='submit',class_='well') }}
+    </div>
+    </div>
+    </div>
+</div>
+

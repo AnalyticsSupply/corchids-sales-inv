@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block style_block %}
+    <style type="text/css">
+        table.table { width: 60%; }
+    </style>
+{% endblock %}
+
+{% block content %}
+
+    <h1 id="">All Weeks</h1>
+    <div>&nbsp;</div>
+    <table class="table table-bordered table-striped">
+        <thead>
+            <tr>
+                <th>Monday Date</th>
+                <th>Year</th>
+                <th>Week Number</th>
+                <th>&nbsp;</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for week in weeks %}
+            {% set week_id = week.key() %}
+            <tr>
+                <td>{{ week.week_monday }}</td>
+                <td>{{ week.year }}</td>
+                <td>{{ week.week_number }}</td>
+                <td>
+                    <form method="get" action="{{ url_for('show_week', week_id=week_id) }}">
+                        <button class="btn">View</button>
+                    </form>
+                </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="8">No weeks Found</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <p>
+        <a class="btn btn-primary" onclick="show_modal()">
+            <i class="icon-plus-sign icon-white"></i>
+            New Week
+        </a>
+    </p>
+
+
+
+{% endblock content %}
+
+{% block footer %}
+    {% include 'new_week.html' %} {# pull in new_route form (modal dialog) #}
+{% endblock footer %}
+
+{% block tail_script %}
+    {% if errors == 1 %}
+        <script>window.onload = function() {
+        	show_modal();
+        };</script>
+    {% endif %}
+    {% if request.args.get('new') == 'yes' %}
+        <script>window.onload = function() {
+        	show_modal();
+        };</script>
+    {% endif %}
+    <script>
+        $( function() {
+            $( "#week_monday" ).datepicker({
+            	  dateFormat: "yy-mm-dd"
+            });});
+       
+        function show_modal() {
+            $('.modal').modal('show');
+        }
+    </script>
+{% endblock tail_script %}

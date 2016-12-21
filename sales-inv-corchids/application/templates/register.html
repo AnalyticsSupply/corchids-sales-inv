@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block content %}
+    
+    <h3>Register Rest User</h3>
+    <div class="container">
+      <h1>Add User</h1>
+      <br>
+      <form action="{{ url_for('admin_only') }}" method="post">
+      {{ form.hidden_tag() }}
+        {{ form.username }}
+        {{ form.password }}
+        <input class="btn btn-default" type="submit" value="Register">
+      </form>
+      {% if error %}
+        <p class="error"><strong>Error:</strong> {{ error }}
+      {% endif %}
+    </div>
+{% endblock content %}
+{% block tail_script %}
+
+{% endblock tail_script %}

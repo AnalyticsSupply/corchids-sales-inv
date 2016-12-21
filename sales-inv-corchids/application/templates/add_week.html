@@ -1,0 +1,15 @@
+{% import 'macros.html' as frm_hlp %}
+<div class="modal fade" id="new-route-modal">
+    <div class="modal-dialog">
+    <div class="modal-content">
+    <div class="modal-header">
+        <button class="close" data-dismiss="modal">&times;</button>
+        <h3>Add a New Week</h3>
+    </div>
+    <div class="modal-body">
+       {{ frm_hlp.render_form(form, form_id='new-week-form',action_url=url_for('list_weeks'), action_text='submit',class_='well') }}
+    </div>
+    </div>
+    </div>
+</div>
+

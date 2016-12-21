@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block style_block %}
+    <style type="text/css">
+        table.table { width: 60%; }
+    </style>
+{% endblock %}
+
+{% block content %}
+
+    <h1 id="">Sales Inventory Home</h1>
+    <div>Hello World!</div>
+    <div><img src="/static/img/bonita.jpg" alt="CO colorchids"></div>
+    <div><a class="" href="{{ url_for('list_weeks') }}">Look At Sales/Growing Weeks</a></div>
+ 
+{% endblock content %}
+
+
+{% block tail_script %}
+    {% if errors == 1 %}
+        <script>window.onload = function() {
+        	show_modal();
+        };</script>
+    {% endif %}
+    {% if request.args.get('new') == '???' %}
+        <script>window.onload = function() {
+        	show_modal();
+        };</script>
+    {% endif %}
+    <script>
+        $( function() {
+            $( "#route_date_start" ).datepicker({
+            	  dateFormat: "yy-mm-dd"
+            });});
+        $( function() {
+            $( "#route_date_end" ).datepicker({
+            	  dateFormat: "yy-mm-dd"
+            });});
+        function show_modal() {
+            $('.modal').modal('show');
+        }
+    </script>
+{% endblock tail_script %}

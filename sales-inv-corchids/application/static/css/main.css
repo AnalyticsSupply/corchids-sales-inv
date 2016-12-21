@@ -1,0 +1,81 @@
+
+/* Main stylesheet */
+
+/* @section forms */
+.btn.cancel { margin-left: 0.5rem; }
+.nowrap { white-space: nowrap; }
+
+/* Your customizations here */
+body {
+    font-family: "Droid Sans","Helvetica Neue",Helvetica,Arial,sans-serif;
+    font-size: 14px;
+    line-height: 1.428571429;
+    color: #888;
+    background-color: #f4e6da;
+}
+
+.navbar-default {
+    background-color: #f4e6da;
+    border-color: #000;
+    color: black;
+}
+
+.navbar-default  .navbar-brand{
+    background-color: #f4e6da;
+    border-color: #000;
+    color: black;
+}
+
+.navbar-default .navbar-brand:hover, .navbar-default .navbar-brand:focus {
+    color: #fff;
+    background-color: transparent;
+}
+
+.navbar-default .navbar-nav:hover, .navbar-default .navbar-nav:focus {
+    color: #fff;
+    background-color: transparent;
+}
+
+.navbar-default .navbar-nav>.active>a,  .navbar-default .navbar-nav>li>a,h1, h2, h3, h4, h5, h6,thead
+{
+    color: black;
+    background-color: transparent;
+}
+
+.navbar-default .navbar-brand>.active>a,  .navbar-default .navbar-brand>.active>a:focus {
+    color: black;
+    background-color: transparent;
+}
+
+.table-striped>tbody>tr:nth-child(odd)>td, .table-striped>tbody>tr:nth-child(odd)>th {
+    background-color: #f4e6da;
+}
+
+.alert-success,.btn-primary, .open .dropdown-toggle.btn-primary {
+    color: #fff;
+    background-color: #473c52;
+    border-color: #96dbd4;
+}
+
+.btn-primary:hover, .btn-primary:focus{
+    color: #fff;
+    background-color: #96dbd4;
+    border-color: #473c52;
+}
+
+table {
+    max-width: 100%;
+    background-color: #f4e6da;
+}
+
+.modal-content {
+    position: relative;
+    background-color: #36bcba;
+    border: 1px solid #999;
+    border: 1px solid rgba(0,0,0,0.2);
+    border-radius: 6px;
+    outline: 0;
+    -webkit-box-shadow: 0 3px 9px rgba(0,0,0,0.5);
+    box-shadow: 0 3px 9px rgba(0,0,0,0.5);
+    background-clip: padding-box;
+}

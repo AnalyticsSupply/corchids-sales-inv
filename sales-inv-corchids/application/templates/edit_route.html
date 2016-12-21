@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% import 'macros.html' as frm_hlp %}
+{% block content %}
+    
+    <h3>Edit Route</h3>
+    {{ frm_hlp.render_form(form, form_id='edit-route',action_url=url_for('edit_route',route_id=route.key.id()), action_text='Save Changes',class_='well') }}
+{% endblock content %}
+{% block tail_script %}
+    <script>
+        $( function() {
+            $( "#route_date_start" ).datepicker({
+            	  dateFormat: "yy-mm-dd"
+            });});
+        $( function() {
+            $( "#route_date_end" ).datepicker({
+            	  dateFormat: "yy-mm-dd"
+            });});
+    </script>
+{% endblock tail_script %}

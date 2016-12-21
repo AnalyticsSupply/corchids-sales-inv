@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block style_block %}
+    <style type="text/css">
+        table.table { width: 60%; }
+    </style>
+{% endblock %}
+
+{% block content %}
+
+    <h1 id="">All Routes</h1>
+    <div>&nbsp;</div>
+    <table class="table table-bordered table-striped">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Start Date</th>
+                <th>Operator Name</th>
+                <th>Added by</th>
+                <th>Added on</th>
+                <th>&nbsp;</th>
+                <th>&nbsp;</th>
+                <th>&nbsp;</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for route in routes %}
+            {% set route_id = route.key.id() %}
+            <tr>
+                <td>{{ route_id }}</td>
+                <td>{{ route.route_date_start }}</td>
+                <td>{{ route.operator_name }}</td>
+                <td>{{ route.added_by }}</td>
+                <td class="nowrap">{{ route.timestamp.strftime('%b %d, %Y %I:%M %p') }}</td>
+                <td>
+                    <form method="get" action="{{ url_for('edit_route', route_id=route_id) }}">
+                        <button class="btn">Edit</button>
+                    </form>
+                </td>
+                <td>
+                    <form method="get" action="{{ url_for('show_route', route_id=route_id) }}">
+                        <button class="btn">View</button>
+                    </form>
+                </td>
+                <td>
+                    <form method="post" action="{{ url_for('delete_route', route_id=route_id) }}">
+                        <button class="btn">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="8">No routes yet</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <p>
+        <a class="btn btn-primary" onclick="show_modal()">
+            <i class="icon-plus-sign icon-white"></i>
+            New Route
+        </a>
+    </p>
+
+
+
+{% endblock content %}
+
+{% block footer %}
+    {% include 'new_route.html' %} {# pull in new_route form (modal dialog) #}
+{% endblock footer %}
+
+{% block tail_script %}
+    {% if errors == 1 %}
+        <script>window.onload = function() {
+        	show_modal();
+        };</script>
+    {% endif %}
+    {% if request.args.get('new') == 'yes' %}
+        <script>window.onload = function() {
+        	show_modal();
+        };</script>
+    {% endif %}
+    <script>
+        $( function() {
+            $( "#route_date_start" ).datepicker({
+            	  dateFormat: "yy-mm-dd"
+            });});
+        $( function() {
+            $( "#route_date_end" ).datepicker({
+            	  dateFormat: "yy-mm-dd"
+            });});
+        function show_modal() {
+            $('.modal').modal('show');
+        }
+    </script>
+{% endblock tail_script %}

@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block style_block %}
+    <style type="text/css">
+        table.table { width: 60%; }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <div><img src="/static/img/{{ plant.image_name }}" alt="{{ plant.display_name }}"></div>
+    <div>
+    <h1 id="">GROWING: {{ plant.display_name }}, for week {{ week.week_number }}, {{ week.year }}</h1>
+    <div>&nbsp;</div>
+    <table class="table table-bordered table-striped">
+        <thead>
+            <tr>
+                <th>Supplier</th>
+                <th>Actual</th>
+                <th>Actual QTY</th>
+                <th>Forecast</th>
+                <th>Forecast QTY</th>
+                <th>Confirmation Number</th>
+                <th>Cost</th>
+                <th>Sale Price</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for plantweek in pweeks %}
+
+            <tr>
+                <td>{{ plantweek.supplier.name }}</td>
+                <td>{{ plantweek.actual }}</td>
+                <td>{{ plantweek.actual_qty }}</td>
+                <td>{{ plantweek.forecast }}</td>
+                <td>{{ plantweek.forecast_qty }}</td>
+                <td>{{ plantweek.confirmation_num }}</td>
+                <td>{{ plantweek.cost }}</td>
+                <td>{{ plantweek.sale_price }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="8">No weeks Found</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <p>
+        <a class="btn btn-primary" onclick="show_modal()">
+            <i class="icon-plus-sign icon-white"></i>
+            Add Crop
+        </a>
+    </p></div>
+    
+     <div>
+    <h1 id="">RESERVED: {{ plant.display_name }}, for week {{ week.week_number }}, {{ week.year }}</h1>
+    <div>&nbsp;</div>
+    <table class="table table-bordered table-striped">
+        <thead>
+            <tr>
+                <th>Customer</th>
+                <th>Concept Name</th>
+                <th>Concept Reserve</th>
+                <th>{{ plant.display_name }}</th>
+                <th>Ship Date</th>
+                <th>Shipped</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for crw in creserve %}
+
+            <tr>
+                <td>{{ crw.cr.customer.customer_name }}</td>
+                <td>{{ crw.cr.concept.name }}</td>
+                <td>{{ crw.cr.num_reserved }}</td>
+                <td>{{ crw.plant_reserve }}</td>
+                <td>{{ crw.cr.ship_date }}</td>
+                <td>{{ crw.cr.shipped }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="8">No weeks Found</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <p>
+        <a class="btn btn-primary" onclick="show_modal()">
+            <i class="icon-plus-sign icon-white"></i>
+            Add Reserve
+        </a>
+    </p></div>
+
+
+
+{% endblock content %}
+
+{% block tail_script %}
+    {% if errors == 1 %}
+        <script>window.onload = function() {
+        	show_modal();
+        };</script>
+    {% endif %}
+    {% if request.args.get('new') == 'yes' %}
+        <script>window.onload = function() {
+        	show_modal();
+        };</script>
+    {% endif %}
+    <script>
+        $( function() {
+            $( "#week_monday" ).datepicker({
+            	  dateFormat: "yy-mm-dd"
+            });});
+       
+        function show_modal() {
+            $('.modal').modal('show');
+        }
+    </script>
+{% endblock tail_script %}

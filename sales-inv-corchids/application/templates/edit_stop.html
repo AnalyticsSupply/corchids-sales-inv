@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% import 'macros.html' as frm_hlp %}
+{% block content %}
+    
+    <h3>Edit Stop</h3>
+    {{ frm_hlp.render_form(form, form_id='edit-stop',action_url=url_for('edit_stop',route_id=route.key.id(),stop_id=stop.key.id()), action_text='Save Changes',class_='well') }}
+{% endblock content %}

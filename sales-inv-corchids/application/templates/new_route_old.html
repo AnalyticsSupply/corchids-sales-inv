@@ -1,0 +1,67 @@
+<div class="modal fade" id="new-route-modal">
+    <div class="modal-dialog">
+    <div class="modal-content">
+    <div class="modal-header">
+        <button class="close" data-dismiss="modal">&times;</button>
+        <h3>Add a New Route</h3>
+    </div>
+    <div class="modal-body">
+        <form id="new-route-form" class="well"
+            action="{{ url_for('list_routes') }}" method="post" accept-charset="utf-8">
+            <fieldset>
+                {{ form.hidden_tag() }}
+                <div class="control-group">
+                    <div class="control-label">{{ form.route_date.label }}</div>
+                    <div class="controls">
+                        {{ form.route_date(class='datepicker') }}
+                        {% if form.route_date.errors %}
+                        <ul class="errors">
+                            {% for error in form.route_date.errors %}
+                            <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                        {% endif %}
+                    </div>
+                </div>
+                <div>&nbsp;</div>
+                <div class="control-group">
+                    <div class="control-label">{{ form.operator_name.label }}</div>
+                    <div class="controls">
+                        {{ form.operator_name|safe }}
+                        {% if form.operator_name.errors %}
+                        <ul class="errors">
+                            {% for error in form.operator_name.errors %}
+                            <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                        {% endif %}
+                    </div>
+                </div>
+                <div>&nbsp;</div>
+                <div class="control-group">
+                    <div class="control-label">{{ form.operator_pay.label }}</div>
+                    <div class="controls">
+                        {{ form.operator_pay|safe }}
+                        {% if form.operator_pay.errors %}
+                        <ul class="errors">
+                            {% for error in form.operator_pay.errors %}
+                            <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                        {% endif %}
+                    </div>
+                </div>
+                <div>&nbsp;</div>
+                <div class="control-group">
+                    <div class="controls">
+                        <input class="btn btn-primary" type="submit" value="Add Route"/>
+                        <button class="btn" data-dismiss="modal">Cancel</button>
+                    </div>
+                </div>
+            </fieldset>
+        </form>
+    </div>
+    </div>
+    </div>
+</div>
+
