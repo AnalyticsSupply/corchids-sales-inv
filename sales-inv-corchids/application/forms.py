@@ -44,7 +44,7 @@ RouteForm = mf1(RouteEntryMain, FlaskForm, field_args={
     #'example_description': dict(validators=[DataRequired()]),
 })
 
-WeekForm = mf2(GrowWeek, FlaskForm, 
+WeekForm = mf1(GrowWeek, FlaskForm, 
             field_args={
                 'week_number' : dict(validators=[DataRequired()]),
                 'year' : dict(validators=[DataRequired()])  })

@@ -32,6 +32,9 @@ class BasicAuthenticator(Authenticator):
 
         user_arg = None
         pass_arg = None
+        curr_user = users.get_current_user()
+        if curr_user:  # means you are logged into website
+            return curr_user
         try:
             # Parse the header to extract a user/password combo.
             # We're expecting something like "Basic XZxgZRTpbjpvcGVuIHYlc4FkZQ=="
@@ -45,7 +48,7 @@ class BasicAuthenticator(Authenticator):
             query = UserModel.query(UserModel.username == user_arg)
             user = query.get()
             if check_password_hash(user.pw_hash, pass_arg):
-                return
+                return users.User(user.added_by)
 
         except Exception:
             # set the headers requesting the browser to prompt for a user/password:

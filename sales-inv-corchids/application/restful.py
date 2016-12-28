@@ -5,7 +5,7 @@ Created on Dec 17, 2016
 
 THis is just my way of making the REST stuff work
 '''
-from application.models import Plant,Customer,GrowWeek,PlantWeek,Supplier, Concept, ConceptPlant, ConceptReserve,PlantGrow,ConceptWeek
+from application.models import Plant,Customer,GrowWeek,Supplier, Concept, ConceptPlant, ConceptReserve,PlantGrow
 
 from application.views.admin import authen
 from application.rest import DispatcherException, Dispatcher
@@ -15,11 +15,12 @@ from exceptions import AttributeError
 import sys
 
 Dispatcher.base_url = "/rest"
-Dispatcher.add_models({"plant": Plant,"customer":Customer,
-                       "week":GrowWeek,"plantweek":PlantWeek,
+Dispatcher.add_models({"plant": Plant,
+                       "customer":Customer,
+                       "week":GrowWeek,
                        "supplier":Supplier,"concept":Concept,
                        "conceptplant":ConceptPlant,"conceptreserve":ConceptReserve,
-                       "plantgrow":PlantGrow,"conceptweek":ConceptWeek})
+                       "plantgrow":PlantGrow})
 
 Dispatcher.authenticator = authen.BasicAuthenticator()
 Dispatcher.authorizer = authen.OwnerAuthorizer()

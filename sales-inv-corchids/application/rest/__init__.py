@@ -61,10 +61,13 @@ import os
 import urlparse
 
 from google.appengine.api import memcache
-from google.appengine.ext import db
+from google.appengine.ext import ndb
 from google.appengine.ext import blobstore
 from google.appengine.api import namespace_manager
-from google.appengine.ext.db import metadata
+from google.appengine.ext.ndb import metadata
+
+from google.appengine.api import users
+
 from xml.dom import minidom
 from datetime import datetime
 
@@ -247,72 +250,72 @@ QUERY_EXPRS = {
     QUERY_LIST_TYPE: "%s IN :%d"}
 
 DATA_TYPE_TO_PROPERTY_TYPE = {
-    "basestring": db.StringProperty,
-    "str": db.StringProperty,
-    "unicode": db.StringProperty,
-    "bool": db.BooleanProperty,
-    "int": db.IntegerProperty,
-    "long": db.IntegerProperty,
-    "float": db.FloatProperty,
-    "Key": db.ReferenceProperty,
-    "datetime": db.DateTimeProperty,
-    "date": db.DateProperty,
-    "time": db.TimeProperty,
-    "Blob": db.BlobProperty,
+    "basestring": ndb.StringProperty,
+    "str": ndb.StringProperty,
+    "unicode": ndb.StringProperty,
+    "bool": ndb.BooleanProperty,
+    "int": ndb.IntegerProperty,
+    "long": ndb.IntegerProperty,
+    "float": ndb.FloatProperty,
+    "Key": ndb.KeyProperty,
+    "datetime": ndb.DateTimeProperty,
+    "date": ndb.DateProperty,
+    "time": ndb.TimeProperty,
+    "Blob": ndb.BlobProperty,
     "BlobKey": blobstore.BlobReferenceProperty,
-    "ByteString": db.ByteStringProperty,
-    "Text": db.TextProperty,
-    "User": db.UserProperty,
-    "Category": db.CategoryProperty,
-    "Link": db.LinkProperty,
-    "Email": db.EmailProperty,
-    "GeoPt": db.GeoPtProperty,
-    "IM": db.IMProperty,
-    "PhoneNumber": db.PhoneNumberProperty,
-    "PostalAddress": db.PostalAddressProperty,
-    "Rating": db.RatingProperty,
-    "list": db.ListProperty,
-    "tuple": db.ListProperty}
+    "ByteString": ndb.BlobProperty,
+    "Text": ndb.TextProperty,
+    "User": ndb.UserProperty,
+    "Category": ndb.StringProperty,
+    "Link": ndb.TextProperty,
+    "Email": ndb.StringProperty,
+    "GeoPt": ndb.GeoPtProperty,
+    #"IM": db.IMProperty,
+    "PhoneNumber": ndb.StringProperty,
+    "PostalAddress": ndb.StringProperty,
+    "Rating": ndb.IntegerProperty}
+    #"list": ndb.ListProperty,
+    #"tuple": db.ListProperty}
 
 PROPERTY_TYPE_TO_XSD_TYPE = {
-    get_type_name(db.StringProperty): XSD_PREFIX + ":string",
-    get_type_name(db.BooleanProperty): XSD_PREFIX + ":boolean",
-    get_type_name(db.IntegerProperty): XSD_PREFIX + ":long",
-    get_type_name(db.FloatProperty): XSD_PREFIX + ":double",
-    get_type_name(db.ReferenceProperty): XSD_NORMAL_STR,
-    get_type_name(db.DateTimeProperty): XSD_PREFIX + ":dateTime",
-    get_type_name(db.DateProperty): XSD_PREFIX + ":date",
-    get_type_name(db.TimeProperty): XSD_PREFIX + ":time",
-    get_type_name(db.BlobProperty): XSD_PREFIX + ":base64Binary",
-    get_type_name(db.ByteStringProperty): XSD_PREFIX + ":base64Binary",
+    get_type_name(ndb.StringProperty): XSD_PREFIX + ":string",
+    get_type_name(ndb.BooleanProperty): XSD_PREFIX + ":boolean",
+    get_type_name(ndb.IntegerProperty): XSD_PREFIX + ":long",
+    get_type_name(ndb.FloatProperty): XSD_PREFIX + ":double",
+    get_type_name(ndb.KeyProperty): XSD_NORMAL_STR,
+    get_type_name(ndb.DateTimeProperty): XSD_PREFIX + ":dateTime",
+    get_type_name(ndb.DateProperty): XSD_PREFIX + ":date",
+    get_type_name(ndb.TimeProperty): XSD_PREFIX + ":time",
+    get_type_name(ndb.BlobProperty): XSD_PREFIX + ":base64Binary",
+    get_type_name(ndb.BlobProperty): XSD_PREFIX + ":base64Binary",
     get_type_name(blobstore.BlobReferenceProperty): BLOBINFO_TYPE_NAME,
-    get_type_name(db.TextProperty): XSD_PREFIX + ":string",
-    get_type_name(db.UserProperty): XSD_NORMAL_STR,
-    get_type_name(db.CategoryProperty): XSD_NORMAL_STR,
-    get_type_name(db.LinkProperty): XSD_PREFIX + ":anyURI",
-    get_type_name(db.EmailProperty): XSD_NORMAL_STR,
-    get_type_name(db.GeoPtProperty): XSD_NORMAL_STR,
-    get_type_name(db.IMProperty): XSD_NORMAL_STR,
-    get_type_name(db.PhoneNumberProperty): XSD_NORMAL_STR,
-    get_type_name(db.PostalAddressProperty): XSD_NORMAL_STR,
-    get_type_name(db.RatingProperty): XSD_PREFIX + ":integer",
+    get_type_name(ndb.TextProperty): XSD_PREFIX + ":string",
+    get_type_name(ndb.UserProperty): XSD_NORMAL_STR,
+    #get_type_name(ndb.CategoryProperty): XSD_NORMAL_STR,
+    #get_type_name(ndb.LinkProperty): XSD_PREFIX + ":anyURI",
+    #get_type_name(ndb.EmailProperty): XSD_NORMAL_STR,
+    get_type_name(ndb.GeoPtProperty): XSD_NORMAL_STR,
+    #get_type_name(ndb.IMProperty): XSD_NORMAL_STR,
+    #get_type_name(ndb.PhoneNumberProperty): XSD_NORMAL_STR,
+    #get_type_name(ndb.PostalAddressProperty): XSD_NORMAL_STR,
+    #get_type_name(ndb.RatingProperty): XSD_PREFIX + ":integer",
     KEY_PROPERTY_TYPE_NAME: XSD_NORMAL_STR}
 
 PROPERTY_TYPE_TO_JSON_TYPE = {
-    get_type_name(db.IntegerProperty): long,
-    get_type_name(db.FloatProperty): float,
-    get_type_name(db.RatingProperty): long}
+    get_type_name(ndb.IntegerProperty): long,
+    get_type_name(ndb.FloatProperty): float}
+    #get_type_name(ndb.RatingProperty): long}
 
 
 class KeyPseudoType(object):
     """Fake PropertyType class for the KeyHandler class."""
 
     def __init__(self):
-        self.verbose_name = None
-        self.default = None
-        self.required = True
-        self.choices = None
-        self.indexed = True
+        self._verbose_name = None
+        self._default = None
+        self._required = True
+        self._choices = None
+        self._indexed = True
         self.name = KEY_PROPERTY_NAME
 
     def empty(self, value):
@@ -596,27 +599,28 @@ class PropertyHandler(object):
     def __init__(self, property_name, property_type,
                  property_content_type=TEXT_CONTENT_TYPE):
         self.property_name = property_name
-        self.storage_name = None
-        if self.property_name != property_type.name:
-            self.storage_name = property_type.name
+        #self.storage_name = None
+        
+        #if self.property_name != property_type._name and property_type._name:
+        #    self.storage_name = property_type._name
         self.property_type = property_type
         self.property_content_type = property_content_type
 
         # most types can be parsed from stripped strings, but don't strip text
         # data
         self.strip_on_read = True
-        if(isinstance(property_type, (db.StringProperty, db.TextProperty))):
+        if(isinstance(property_type, (ndb.StringProperty, ndb.TextProperty))):
             self.strip_on_read = False
 
     def get_query_field(self):
         """Returns the field name which should be used to query this
         property."""
-        return self.property_type.name
+        return self.property_type._name
 
     def can_query(self):
         """Returns True if this property can be used as a query filter, False
         otherwise."""
-        return self.property_type.indexed
+        return self.property_type._indexed
 
     def get_data_type(self):
         """Returns the type of data this property accepts."""
@@ -625,7 +629,10 @@ class PropertyHandler(object):
     def empty(self, value):
         """Tests a property value for empty in a manner specific to the
         property type."""
-        return self.property_type.empty(value)
+        #return self.property_type.empty(value)
+        if value is None:
+            return True
+        return False
 
     def get_type_string(self):
         """Returns the type string describing this property."""
@@ -655,8 +662,8 @@ class PropertyHandler(object):
         (may be None), used by the default read_xml_value() method."""
         if((value is None) or (self.strip_on_read and not value)):
             return None
-        if(not isinstance(value, self.get_data_type())):
-            value = self.get_data_type()(value)
+        #if(not isinstance(value, self.get_data_type())):
+        #    value = self.get_data_type()(value)
         return value
 
     def value_from_raw_string(self, value):
@@ -708,24 +715,24 @@ class PropertyHandler(object):
 
         prop_type = self.property_type
         element_el.attributes[REQUIRED_ATTR_NAME] = (
-            str(prop_type.required).lower())
+            str(prop_type._required).lower())
         element_el.attributes[INDEXED_ATTR_NAME] = (
-            str(prop_type.indexed).lower())
+            str(prop_type._indexed).lower())
 
-        if prop_type.default is not None:
+        if prop_type._default is not None:
             element_el.attributes[DEFAULT_ATTR_NAME] = (
-                self.value_to_string(prop_type.default))
+                self.value_to_string(prop_type._default))
 
-        if prop_type.verbose_name is not None:
+        if prop_type._verbose_name is not None:
             element_el.attributes[VERBOSENAME_ATTR_NAME] = (
-                unicode(prop_type.verbose_name))
+                unicode(prop_type._verbose_name))
 
         if hasattr(prop_type, "multiline"):
             element_el.attributes[MULTILINE_ATTR_NAME] = (
                 str(prop_type.multiline).lower())
 
-        if prop_type.choices:
-            xsd_append_choices(element_el, self, prop_type.choices)
+        if prop_type._choices:
+            xsd_append_choices(element_el, self, prop_type._choices)
 
         return annotation_el
 
@@ -749,15 +756,15 @@ class DateTimeHandler(PropertyHandler):
         super(DateTimeHandler, self).__init__(property_name, property_type)
 
         self.format_args = []
-        if(isinstance(property_type, db.DateProperty)):
+        if(isinstance(property_type, ndb.DateProperty)):
             self.dt_format = DATE_FORMAT
             self.dt_type = datetime.date
             self.allows_microseconds = False
-        elif(isinstance(property_type, db.TimeProperty)):
+        elif(isinstance(property_type, ndb.TimeProperty)):
             self.dt_format = TIME_FORMAT_NO_MS
             self.dt_type = datetime.time
             self.allows_microseconds = True
-        elif(isinstance(property_type, db.DateTimeProperty)):
+        elif(isinstance(property_type, ndb.DateTimeProperty)):
             self.dt_format = DATE_TIME_FORMAT_NO_MS
             self.dt_type = datetime
             self.allows_microseconds = True
@@ -816,6 +823,21 @@ class TextHandler(PropertyHandler):
         """Text properties may not be used in query filters."""
         return False
 
+class UserHandler(PropertyHandler):
+    
+    def __init__(self, property_name, property_type):
+        super(UserHandler, self).__init__(property_name, property_type)
+        
+    def value_to_string(self,value):
+        if isinstance(value, users.User):
+            return value.email()
+        else:
+            return str(value)
+        
+    def value_from_xml_string(self,value):
+        return users.User(value)
+        
+    
 
 class ByteStringHandler(PropertyHandler):
     """PropertyHandler for ByteString property instances."""
@@ -861,7 +883,7 @@ class BaseReferenceHandler(PropertyHandler):
 
     def get_data_type(self):
         """Returns the db.Key type."""
-        return db.Key
+        return ndb.Key
 
     def get_value(self, model):
         """Returns the key of the referenced model instance."""
@@ -869,7 +891,7 @@ class BaseReferenceHandler(PropertyHandler):
         # for dynamic props, this is still sometimes the referenced object
         # and not the key
         if(value and (not isinstance(value, self.get_data_type()))):
-            value = value.key()
+            value = value.id
         return value
 
 
@@ -887,7 +909,7 @@ class ReferenceHandler(BaseReferenceHandler):
 
         reference_class_name = XSD_ANY_NAME
         reference_class = self.property_type.reference_class
-        if (reference_class is not None) and (reference_class is not db.Model):
+        if (reference_class is not None) and (reference_class is not ndb.Model):
             reference_class_name = reference_class.__name__
 
         appinf_el.attributes[REFERENCECLASS_ATTR_NAME] = reference_class_name
@@ -999,6 +1021,7 @@ class KeyHandler(BaseReferenceHandler):
 
     def __init__(self):
         super(KeyHandler, self).__init__(KEY_PROPERTY_NAME, KEY_PROPERTY_TYPE)
+        pass
 
     def get_query_field(self):
         """Returns the special key query field name '__key__'"""
@@ -1009,7 +1032,7 @@ class KeyHandler(BaseReferenceHandler):
         EMPTY_VALUE otherwise."""
         if(not model.is_saved()):
             return EMPTY_VALUE
-        return model.key()
+        return model.id
 
     def get_type_string(self):
         """Returns the custom 'KeyProperty' type name."""
@@ -1085,19 +1108,19 @@ class ListHandler(PropertyHandler):
 
         prop_type = self.property_type
         element_el.attributes[REQUIRED_ATTR_NAME] = (
-            str(prop_type.required).lower())
+            str(prop_type._required).lower())
         element_el.attributes[INDEXED_ATTR_NAME] = (
-            str(prop_type.indexed).lower())
+            str(prop_type._indexed).lower())
 
-        if prop_type.verbose_name is not None:
+        if prop_type._verbose_name is not None:
             element_el.attributes[VERBOSENAME_ATTR_NAME] = (
-                unicode(prop_type.verbose_name))
+                unicode(prop_type._verbose_name))
 
         # list properties always have at least an empty list as default
         default_el = mark_list_node(
             append_child(element_el, REST_MD_DEFAULT_NAME))
-        if prop_type.default is not None:
-            for val in prop_type.default:
+        if prop_type._default is not None:
+            for val in prop_type._default:
                 append_child(default_el, ITEM_EL_NAME,
                              self.sub_handler.value_to_string(val))
 
@@ -1178,7 +1201,7 @@ class DynamicPropertyHandler(object):
 
     def __init__(self, property_name):
         self.property_name = property_name
-        self.storage_name = None
+        #self.storage_name = None
 
     def get_query_field(self):
         """Returns the field name which should be used to query this
@@ -1253,17 +1276,17 @@ class DynamicPropertyHandler(object):
         if(value is not None):
             property_type = DATA_TYPE_TO_PROPERTY_TYPE[
                 get_instance_type_name(value)]
-            if(property_type is db.ListProperty):
-                prop_args.append(type(value[0]))
+            #if(property_type is db.ListProperty):
+            #    prop_args.append(type(value[0]))
 
         if(isinstance(property_type, basestring)):
             if DATA_TYPE_SEPARATOR in property_type:
                 property_type, sub_property_type = property_type.split(
                     DATA_TYPE_SEPARATOR, 1)
                 sub_handler = get_property_handler(ITEM_EL_NAME, getattr(
-                    db, sub_property_type)())
+                    ndb, sub_property_type)())
                 prop_args.append(sub_handler.get_data_type())
-            property_type = getattr(db, property_type)
+            property_type = getattr(ndb, property_type)
 
         property_type = property_type(*prop_args)
         property_type.name = self.property_name
@@ -1274,21 +1297,26 @@ class DynamicPropertyHandler(object):
 def get_property_handler(property_name, property_type):
     """Returns a PropertyHandler instance with the given name appropriate for
     the given type."""
-    if(isinstance(property_type, (db.DateTimeProperty, db.TimeProperty,
-                                  db.DateProperty))):
+    if(isinstance(property_type, (ndb.DateTimeProperty, ndb.TimeProperty,
+                                  ndb.DateProperty))):
         return DateTimeHandler(property_name, property_type)
-    elif(isinstance(property_type, db.BooleanProperty)):
+    elif(isinstance(property_type, ndb.BooleanProperty)):
         return BooleanHandler(property_name, property_type)
-    elif(isinstance(property_type, db.ReferenceProperty)):
+    elif(isinstance(property_type, ndb.KeyProperty)):
         return ReferenceHandler(property_name, property_type)
-    elif(isinstance(property_type, db.ByteStringProperty)):
-        return ByteStringHandler(property_name, property_type)
-    elif(isinstance(property_type, db.BlobProperty)):
-        return BlobHandler(property_name, property_type)
-    elif(isinstance(property_type, db.TextProperty)):
+    #elif(isinstance(property_type, db.ByteStringProperty)):
+    #    return ByteStringHandler(property_name, property_type)
+    elif(isinstance(property_type,ndb.UserProperty)):
+        return UserHandler(property_name,property_type)
+    elif(isinstance(property_type, ndb.StringProperty)):
+        return PropertyHandler(property_name, property_type)
+    elif(isinstance(property_type, ndb.TextProperty)):
         return TextHandler(property_name, property_type)
-    elif(isinstance(property_type, db.ListProperty)):
-        return ListHandler(property_name, property_type)
+    elif(isinstance(property_type, ndb.BlobProperty)):
+        return BlobHandler(property_name, property_type)
+    
+    #elif(isinstance(property_type, db.ListProperty)):
+    #    return ListHandler(property_name, property_type)
     elif(isinstance(property_type, blobstore.BlobReferenceProperty)):
         return BlobReferenceHandler(property_name, property_type)
 
@@ -1401,7 +1429,7 @@ class ModelHandler(object):
     def property_handlers(self):
         """Lazy initializer for the property_handlers dict."""
         prop_handlers = {}
-        for prop_name, prop_type in self.model_type.properties().iteritems():
+        for prop_name, prop_type in self.model_type._properties.iteritems():
             prop_handler = get_property_handler(prop_name, prop_type)
             prop_xml_name = convert_to_valid_xml_name(
                 prop_handler.property_name)
@@ -1411,7 +1439,7 @@ class ModelHandler(object):
     def is_dynamic(self):
         """Returns True if this Model type supports dynamic properties (is a
         subclass of Expando), False otherwise."""
-        return issubclass(self.model_type, db.Expando)
+        return issubclass(self.model_type, ndb.Expando)
 
     def get(self, key):
         """Returns the model instance with the given key."""
@@ -1436,11 +1464,11 @@ class ModelHandler(object):
         # convert property names to storage names, since the Model
         # constructor seems to expect properties using the storage name
         # (blech!)
-        for prop_handler in self.property_handlers.itervalues():
-            if(prop_handler.storage_name and
-               (prop_handler.property_name in props)):
-                props[prop_handler.storage_name] = props.pop(
-                    prop_handler.property_name)
+        #for prop_handler in self.property_handlers.itervalues():
+        #    if(prop_handler.storage_name and
+        #       (prop_handler.property_name in props)):
+        #        props[prop_handler.storage_name] = props.pop(
+        #            prop_handler.property_name)
 
         return self.model_type(**props)
 
@@ -1457,7 +1485,7 @@ class ModelHandler(object):
                 model_query.fetch_page_size += 1
 
         if(model_query.query_expr is None):
-            query = self.model_type.all()
+            query = self.model_type.query()
             if(model_query.ordering):
                 query.order(QUERY_ORDER_PREFIXES[model_query.order_type_idx] +
                             model_query.ordering)
@@ -1496,18 +1524,22 @@ class ModelHandler(object):
             if(len(models) > real_fetch_page_size):
                 models = models[0:real_fetch_page_size]
 
+        for model in models:
+            model.set_saved()
         return models
 
     def delete_all(self, model_query):
         """Deletes all model instances of this type matching the given
         query."""
         if(model_query.query_expr is None):
-            query = self.model_type.all()
+            query = self.model_type.query()
         else:
             query = self.model_type.gql(model_query.query_expr,
                                         *model_query.query_params)
 
-        db.delete(query)
+        #ndb.delete(query)
+        for m in query:
+            m.delete()
 
     def get_property_handler(self, prop_name):
         """Returns the relevant property handler for the given property
@@ -1572,7 +1604,7 @@ class ModelHandler(object):
         if READ_EXT_NS in Dispatcher.external_namespaces:
             model_ns = None
             if model.is_saved():
-                model_ns = model.key().namespace()
+                model_ns = model.key.namespace()
             if model_ns:
                 model_el.attributes[MODELNS_ATTR_NAME] = model_ns
 
@@ -1593,12 +1625,13 @@ class ModelHandler(object):
                                         prop_handler, blob_info_format)
 
         # write dynamic properties last
-        for prop_name in model.dynamic_properties():
-            prop_xml_name = convert_to_valid_xml_name(prop_name)
-            if((include_props is None) or (prop_xml_name in include_props)):
-                self.write_xml_property(model_el, model, prop_xml_name,
-                                        DynamicPropertyHandler(prop_name),
-                                        blob_info_format)
+        #  For NDB this is not a valid attribute.. therefore not using
+        #for prop_name in model.dynamic_properties():
+        #    prop_xml_name = convert_to_valid_xml_name(prop_name)
+        #    if((include_props is None) or (prop_xml_name in include_props)):
+        #        self.write_xml_property(model_el, model, prop_xml_name,
+        #                                DynamicPropertyHandler(prop_name),
+        #                                blob_info_format)
 
     def write_xml_property(self, model_el, model, prop_xml_name, prop_handler,
                            blob_info_format):
@@ -1658,7 +1691,7 @@ class ModelHandler(object):
 
         # otherwise, create hash of all model props (and key)
         model_hash = 0
-        for prop_key, prop_value in db.to_dict(model).iteritems():
+        for prop_key, prop_value in ndb.Model.to_dict(model).iteritems():
             prop_hash = hash(prop_key)
             if is_list_type(prop_value):
                 for idx in range(0, len(prop_value)):
@@ -1667,7 +1700,7 @@ class ModelHandler(object):
                 prop_hash += hash(prop_value)
             model_hash = model_hash ^ prop_hash
 
-        model_hash = model_hash ^ (hash(KEY_PROPERTY_NAME) + hash(model.key()))
+        model_hash = model_hash ^ (hash(KEY_PROPERTY_NAME) + hash(model.id))
 
         return model_hash
 
@@ -1675,10 +1708,10 @@ class ModelHandler(object):
 # static collection of property handlers for BlobInfo types (because
 # BlobInfo.properties() is a set not a dict)
 BLOBINFO_PROP_HANDLERS = {
-    "content_type": PropertyHandler("content_type", db.StringProperty()),
-    "creation": DateTimeHandler("creation", db.DateTimeProperty()),
-    "filename": PropertyHandler("filename", db.StringProperty()),
-    "size": PropertyHandler("size", db.IntegerProperty())}
+    "content_type": PropertyHandler("content_type", ndb.StringProperty()),
+    "creation": DateTimeHandler("creation", ndb.DateTimeProperty()),
+    "filename": PropertyHandler("filename", ndb.StringProperty()),
+    "size": PropertyHandler("size", ndb.IntegerProperty())}
 
 
 class DispatcherException(Exception):
@@ -2056,7 +2089,7 @@ class Dispatcher(webapp.RequestHandler):
                     cls.add_models_from_module(obj, use_module_name,
                                                exclude_model_types,
                                                model_methods, recurse)
-            elif(isinstance(obj, type) and issubclass(obj, db.Model) and
+            elif(isinstance(obj, type) and issubclass(obj, ndb.Model) and
                  (obj not in exclude_model_types)):
                 model_name = module_name + get_type_name(obj)
                 cls.add_model(model_name, obj, model_methods)
@@ -2107,7 +2140,7 @@ class Dispatcher(webapp.RequestHandler):
             raise ValueError("cannot use name %s" % METADATA_PATH)
         if(model_name in cls.model_handlers):
             raise KeyError("name %s already used" % model_name)
-        if(not issubclass(model_type, db.Model)):
+        if(not issubclass(model_type, ndb.Model)):
             raise ValueError("given model type %s is not a subclass of Model" %
                              model_type)
         cls.model_handlers[xml_name] = ModelHandler(model_name, model_type,
@@ -2144,6 +2177,7 @@ class Dispatcher(webapp.RequestHandler):
             return
 
         # attempt to return cached response
+    
         cached_response = memcache.get(self.request.url)
         if cached_response:
             cached_response = pickle.loads(cached_response)
@@ -2416,11 +2450,11 @@ class Dispatcher(webapp.RequestHandler):
 
         try:
             if (model_key is not None):
-                model_key = db.Key(model_key)
+                model_key = ndb.Key(model_key)
                 self.authorizer.can_delete(self, model_handler.model_type,
                                            model_key)
                 self.update_if_match(model_handler, None, (model_key,))
-                db.delete(model_key)
+                model_handler.model_type.delete(model_key)
             else:
                 model_query.query_expr = self.authorizer.check_delete_query(
                     self, model_query.query_expr, model_query.query_params)
@@ -2683,7 +2717,7 @@ class Dispatcher(webapp.RequestHandler):
         list or single instance)."""
         if(not is_list_type(models)):
             models = [models]
-        return unicode(",".join([str(model.key()) for model in models]))
+        return unicode(",".join([str(model.id) for model in models]))
 
     def model_from_xml(self, model_el, model_name, model_handler, key,
                        is_replace):
@@ -2705,7 +2739,7 @@ class Dispatcher(webapp.RequestHandler):
 
         new_model = False
         if(key):
-            key = db.Key(key.strip())
+            key = ndb.Key(key.strip())
             if(given_key and (given_key != key)):
                 raise ValueError(
                     "key in data %s does not match request key %s" %
@@ -2713,11 +2747,11 @@ class Dispatcher(webapp.RequestHandler):
             model = model_handler.get(key)
 
             if(is_replace):
-                for prop_name, prop_type in model.properties().iteritems():
+                for prop_name, prop_type in model._properties.iteritems():
                     if(prop_name not in props):
                         setattr(model, prop_name, prop_type.default_value())
-                for prop_name in model.dynamic_properties():
-                    delattr(model, prop_name)
+                #for prop_name in model.dynamic_properties():
+                #    delattr(model, prop_name)
 
             for prop_name, prop_value in props.iteritems():
                 setattr(model, prop_name, prop_value)
