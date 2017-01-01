@@ -662,6 +662,15 @@ class PropertyHandler(object):
         (may be None), used by the default read_xml_value() method."""
         if((value is None) or (self.strip_on_read and not value)):
             return None
+        
+        if (isinstance(self.property_type, ndb.StringProperty)):
+            return str(value)
+        
+        if (isinstance(self.property_type, ndb.IntegerProperty)):
+            return int(value)
+        
+        if (isinstance(self.property_type, ndb.FloatProperty)):
+            return float(value)
         #if(not isinstance(value, self.get_data_type())):
         #    value = self.get_data_type()(value)
         return value
@@ -885,13 +894,18 @@ class BaseReferenceHandler(PropertyHandler):
         """Returns the db.Key type."""
         return ndb.Key
 
+    def value_from_xml_string(self, value):
+        """Wraps the xml value in the Key """
+        k = ndb.Key(self.property_type._kind,int(value))
+        return k
+
     def get_value(self, model):
         """Returns the key of the referenced model instance."""
-        value = self.property_type.get_value_for_datastore(model)
+        value = getattr(model, self.property_name).id()
         # for dynamic props, this is still sometimes the referenced object
         # and not the key
-        if(value and (not isinstance(value, self.get_data_type()))):
-            value = value.id
+        #if(value and (not isinstance(value, self.get_data_type()))):
+        #    value = value.id
         return value
 
 
@@ -900,6 +914,11 @@ class ReferenceHandler(BaseReferenceHandler):
 
     def __init__(self, property_name, property_type):
         super(ReferenceHandler, self).__init__(property_name, property_type)
+        
+    def value_from_xml_string(self, value):
+        """Wraps the xml value in the Key """
+        k = ndb.Key(self.property_type._kind,int(value))
+        return k
 
     def write_xsd_metadata_annotation(self, prop_el):
         """Writes the annotation metadata for reference properties."""
@@ -1019,7 +1038,7 @@ class BlobReferenceHandler(BaseReferenceHandler):
 class KeyHandler(BaseReferenceHandler):
     """PropertyHandler for primary 'key' of a Model instance."""
 
-    def __init__(self):
+    def __init__(self, model_type):
         super(KeyHandler, self).__init__(KEY_PROPERTY_NAME, KEY_PROPERTY_TYPE)
         pass
 
@@ -1037,7 +1056,10 @@ class KeyHandler(BaseReferenceHandler):
     def get_type_string(self):
         """Returns the custom 'KeyProperty' type name."""
         return KEY_PROPERTY_TYPE_NAME
-
+    
+    def value_from_xml_string(self, value):
+        """Wraps the xml value in the Key """
+        return ndb.Key(self.property_type._kind,int(value))
 
 class ListHandler(PropertyHandler):
     """PropertyHandler for lists property instances."""
@@ -1422,7 +1444,7 @@ class ModelHandler(object):
     def __init__(self, model_name, model_type, model_methods):
         self.model_name = model_name
         self.model_type = model_type
-        self.key_handler = KeyHandler()
+        self.key_handler = KeyHandler(self.model_type)
         self.model_methods = model_methods
 
     @Lazy

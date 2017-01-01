@@ -12,8 +12,8 @@ from flask import flash, redirect, url_for, render_template, request
 from google.appengine.runtime.apiproxy_errors import CapabilityDisabledError
 
 from application.forms import WeekForm
-from application.models import GrowWeek,PlantGrow, ConceptReserveWrap
-from application.models import ConceptPlant, ConceptReserve
+from application.models import GrowWeek,PlantGrow, ProductReserveWrap
+from application.models import ProductPlant, ProductReserve
 from google.appengine.ext.db import Model,Query
 
 from application.decorators import login_required
@@ -97,15 +97,15 @@ class AdminShowPlantWeek(View):
         pg.filter('plant = ',plant)
         pg.filter('finish_week = ',week)
         
-        cps = Query(ConceptPlant)
+        cps = Query(ProductPlant)
         cps.filter('plant = ',plant)
         cr_list = []
         for cp in cps:
-            crs = Query(ConceptReserve)
-            crs.filter('concept = ',cp.concept)
+            crs = Query(ProductReserve)
+            crs.filter('product = ',cp.concept)
             crs.filter('finish_week = ',week)
             for cr in crs:
-                crw = ConceptReserveWrap(cr)
+                crw = ProductReserveWrap(cr)
                 crw.plant_name = plant.display_name
                 crw.incr_plant(cp.qty * crw.cr.num_reserved)
                 cr_list.append(crw)

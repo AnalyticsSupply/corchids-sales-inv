@@ -12,6 +12,11 @@ from werkzeug.security import generate_password_hash
 
 
 class NDBBase(ndb.Model):
+    added_by = ndb.UserProperty(auto_current_user_add=True)
+    updated_by = ndb.UserProperty(auto_current_user=True)
+    timestamp = ndb.DateTimeProperty(auto_now_add=True)
+    up_timestamp = ndb.DateTimeProperty(auto_now=True)
+    
     @property
     def id(self):
         """Override for getting the ID.
@@ -56,26 +61,20 @@ class User:
 class UserModel(NDBBase):
     username = ndb.StringProperty(required=True)
     pw_hash = ndb.StringProperty(required=True)
-    added_by = ndb.UserProperty(auto_current_user_add=True)
-
 
 class Plant(NDBBase):
     """ Plants for which we have forecasted values"""
     name = ndb.StringProperty(required=True)
     display_name = ndb.StringProperty(required=True)
     image_name = ndb.StringProperty(required=True)    
-    added_by = ndb.UserProperty(auto_current_user_add=True)
-    updated_by = ndb.UserProperty(auto_current_user=True)
-    timestamp = ndb.DateTimeProperty(auto_now_add=True)
-    up_timestamp = ndb.DateTimeProperty(auto_now=True)
     
     @property
     def plantgrow(self):
         return PlantGrow.query(PlantGrow.plant == self.key)
     
-    @property
-    def concept_plants(self):
-        return ConceptPlant.query(ConceptPlant.plant == self.key)
+ #   @property
+ #   def concept_plants(self):
+ #       return ConceptPlant.query(ConceptPlant.plant == self.key)
 
 
 class Customer(NDBBase):
@@ -83,40 +82,28 @@ class Customer(NDBBase):
     customer_name = ndb.StringProperty(required=True)
     description = ndb.StringProperty(required=False)
     address = ndb.StringProperty()
-    added_by = ndb.UserProperty(auto_current_user_add=True)
-    updated_by = ndb.UserProperty(auto_current_user=True)
-    timestamp = ndb.DateTimeProperty(auto_now_add=True)
-    up_timestamp = ndb.DateTimeProperty(auto_now=True)   
     
     @property
     def reserves(self):
-        return ConceptReserve.query(ConceptReserve.customer == self.key)
+        return ProductReserve.query(ProductReserve.customer == self.key)
 
 class GrowWeek(NDBBase):
     """ Represents a Week where we can have reserve orders """
     week_number = ndb.IntegerProperty(required=True)
     year = ndb.IntegerProperty(required=True)
     week_monday = ndb.DateProperty()
-    added_by = ndb.UserProperty(auto_current_user_add=True)
-    updated_by = ndb.UserProperty(auto_current_user=True)
-    timestamp = ndb.DateTimeProperty(auto_now_add=True)
-    up_timestamp = ndb.DateTimeProperty(auto_now=True)
-
+   
     @property
     def plantgrow(self):
         return PlantGrow.query(PlantGrow.finish_week == self.key)
     
     @property 
     def reserves(self):
-        return ConceptReserve.query(ConceptReserve.finish_week == self.key)
+        return ProductReserve.query(ProductReserve.finish_week == self.key)
     
 class Supplier(NDBBase):
     """ Represents the supplier of plants """
     name = ndb.StringProperty(required=True)
-    added_by = ndb.UserProperty(auto_current_user_add=True)
-    updated_by = ndb.UserProperty(auto_current_user=True)
-    timestamp = ndb.DateTimeProperty(auto_now_add=True)
-    up_timestamp = ndb.DateTimeProperty(auto_now=True)
     
     @property
     def plantgrow(self):
@@ -134,79 +121,50 @@ class PlantGrow(NDBBase):
     confirmation_num = ndb.StringProperty()
     cost = ndb.FloatProperty()
     sale_price = ndb.FloatProperty()
-    added_by = ndb.UserProperty(auto_current_user_add=True)
-    updated_by = ndb.UserProperty(auto_current_user=True)
-    timestamp = ndb.DateTimeProperty(auto_now_add=True)
-    up_timestamp = ndb.DateTimeProperty(auto_now=True)
-
+   
 class Concept(NDBBase):
     """ many plants can be combined to create 1 concept """
     name = ndb.StringProperty(required=True)
-    added_by = ndb.UserProperty(auto_current_user_add=True)
-    updated_by = ndb.UserProperty(auto_current_user=True)
-    timestamp = ndb.DateTimeProperty(auto_now_add=True)
-    up_timestamp = ndb.DateTimeProperty(auto_now=True)
-    
-    @property
-    def concept_plants(self):
-        return ConceptPlant.query(ConceptPlant.concept == self.key)
     
     @property
     def product_concepts(self):
         return ProductConcept.query(ProductConcept == self.key)
     
-    @property
-    def reserves(self):
-        return ConceptReserve.query(ConceptReserve.concept == self.key)
     
 class Product(NDBBase):
     ''' this is the product name for customers '''
     name = ndb.StringProperty(required=True)
-    added_by = ndb.UserProperty(auto_current_user_add=True)
-    updated_by = ndb.UserProperty(auto_current_user=True)
-    timestamp = ndb.DateTimeProperty(auto_now_add=True)
-    up_timestamp = ndb.DateTimeProperty(auto_now=True)
     
     @property
     def product_concepts(self):
         return ProductConcept.query(ProductConcept.product == self.key)
-   
-class ConceptPlant(NDBBase):
-    plant = ndb.KeyProperty(kind=Plant)
-    concept = ndb.KeyProperty(kind=Concept)
-    qty = ndb.IntegerProperty(required=True,default=1)
-    added_by = ndb.UserProperty(auto_current_user_add=True)
-    updated_by = ndb.UserProperty(auto_current_user=True)
-    timestamp = ndb.DateTimeProperty(auto_now_add=True)
-    up_timestamp = ndb.DateTimeProperty(auto_now=True)
+    
+    @property
+    def product_reserve(self):
+        return ProductReserve.query(ProductReserve.product == self.key)
+ 
+class ProductPlant(NDBBase):
+    ''' this relates plants to products '''
+    plant = ndb.KeyProperty(kind=Plant, required=True)
+    product = ndb.KeyProperty(kind=Product, required=True)
+    qty = ndb.IntegerProperty(default=1)  
    
 class ProductConcept(NDBBase):
     concept = ndb.KeyProperty(kind=Concept)
     product = ndb.KeyProperty(kind=Product)
-    qty = ndb.IntegerProperty(required=True, default=1)
-    added_by = ndb.UserProperty(auto_current_user_add=True)
-    updated_by = ndb.UserProperty(auto_current_user=True)
-    timestamp = ndb.DateTimeProperty(auto_now_add=True)
-    up_timestamp = ndb.DateTimeProperty(auto_now=True)
     
-class ConceptReserve(NDBBase):
+class ProductReserve(NDBBase):
     """ This is the plant that is being reserved by a customer """
     customer = ndb.KeyProperty(kind=Customer)
     finish_week = ndb.KeyProperty(kind=GrowWeek)
-    concept = ndb.KeyProperty(kind=Concept)
+    product = ndb.KeyProperty(kind=Product)
     num_reserved = ndb.IntegerProperty(default=0)
-    shipped = ndb.BooleanProperty()
-    ship_date = ndb.DateProperty()
-    added_by = ndb.UserProperty(auto_current_user_add=True)
-    updated_by = ndb.UserProperty(auto_current_user=True)
-    timestamp = ndb.DateTimeProperty(auto_now_add=True)
-    up_timestamp = ndb.DateTimeProperty(auto_now=True)
-    
+    shipped = ndb.BooleanProperty()    
 
-class ConceptReserveWrap():
+class ProductReserveWrap():
     
-    def __init__(self, concept_resv):
-        self.cr = concept_resv
+    def __init__(self, product_reserve):
+        self.pr = product_reserve
         self.plant_name = None
         self.plant_reserve = 0
         
