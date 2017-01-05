@@ -33,8 +33,8 @@ app.add_url_rule('/logout', 'logout', view_func=AdminLogout.as_view("logout"))
 app.add_url_rule('/sales_inventory', 'inv_home',view_func=AdminInvHome.as_view('inv_home'))
 
 app.add_url_rule('/weeks', 'list_weeks', view_func=AdminListWeeks.as_view('list_weeks'), methods=['GET', 'POST'])
-app.add_url_rule('/week/<week_id>',view_func=AdminShowWeek.as_view('show_week'), methods=['GET','POST'])
-app.add_url_rule('/plantweek/<week_id>/<plant_id>',view_func=AdminShowPlantWeek.as_view("show_plantweek"), methods=['GET','POST'])
+app.add_url_rule('/week/<int:week_id>',view_func=AdminShowWeek.as_view('show_week'), methods=['GET','POST'])
+app.add_url_rule('/plantweek/<int:week_id>/<int:plant_id>',view_func=AdminShowPlantWeek.as_view("show_plantweek"), methods=['GET','POST'])
 #app.add_url_rule('/examples/cached', 'cached_examples', view_func=AdminListExamplesCached.as_view('cached_examples'))
 
 app.add_url_rule('/admin_only', 'admin_only', view_func=AdminSecret.as_view('admin_only'), methods=['GET', 'POST'])

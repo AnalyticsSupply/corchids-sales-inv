@@ -7,10 +7,33 @@
 
 {% block content %}
 
-    <h1 id="">Sales Inventory Home</h1>
-    <div>Hello World!</div>
-    <div><img src="/static/img/bonita.jpg" alt="CO colorchids"></div>
-    <div><a class="" href="{{ url_for('list_weeks') }}">Look At Sales/Growing Weeks</a></div>
+
+    <div class="row">
+       <div class="col-xs-12 col-md-12"><h2>Sales Inventory Home</h2></div>
+       <p>Date: <input type="text" id="datepicker"><BR> Select A Different Week</p>
+       <div class="col-xs-6 col-md-4"><img src="/static/img/bonita.jpg" alt="CO colorchids" class="img-fluid" alt="Responsive image">
+       <a class="" href="{{ url_for('list_weeks') }}"><BR>List All Weeks</a></div>
+       <div class="col-xs-12 col-md-8">
+          <h3>Week #, in </h3>
+          <table class="table table-bordered table-striped">
+        <thead>
+            <tr>
+                <th>Plant</th>
+                <th>Wanted</th>
+                <th>Actual</th>
+                <th>Forecast</th>
+                <th>Reserved</th>
+                <th>&nbsp;</th>
+            </tr>
+        </thead>
+        <tbody id="summary">
+            
+        </tbody>
+    </table>
+       </div>
+       
+    </div>
+
  
 {% endblock content %}
 
@@ -27,14 +50,26 @@
         };</script>
     {% endif %}
     <script>
+        window.onload = function() {
+    	  call_wk_summ(2017,1);
+    	};
         $( function() {
-            $( "#route_date_start" ).datepicker({
-            	  dateFormat: "yy-mm-dd"
-            });});
-        $( function() {
-            $( "#route_date_end" ).datepicker({
-            	  dateFormat: "yy-mm-dd"
-            });});
+          $( "#datepicker" ).datepicker({
+        	  inline: true,
+			  showOtherMonths: true,  
+        	  onSelect: function(dateText, inst) {
+        	        var date = $(this).val();
+        	        var parseTime = d3.timeParse('%m/%d/%Y');
+        	        var pDate = parseTime(date);
+        	        var year = pDate.getFullYear();
+        	        var timeFormat = d3.timeFormat('%W');
+        	        var week_num = Number(timeFormat(pDate));
+        	        call_wk_summ(year,week_num);
+        	    }
+        	})
+        	.datepicker('widget').wrap('<div class="ll-skin-lugo"/>');
+        } );
+   
         function show_modal() {
             $('.modal').modal('show');
         }

@@ -72,6 +72,10 @@ class Plant(NDBBase):
     def plantgrow(self):
         return PlantGrow.query(PlantGrow.plant == self.key)
     
+    @property
+    def products(self):
+        return ProductPlant.query(ProductPlant.plant == self.key)
+    
  #   @property
  #   def concept_plants(self):
  #       return ConceptPlant.query(ConceptPlant.plant == self.key)
@@ -101,6 +105,38 @@ class GrowWeek(NDBBase):
     def reserves(self):
         return ProductReserve.query(ProductReserve.finish_week == self.key)
     
+    def chk_create(self, din, name, plant):
+        if name not in din.keys():
+            din[name] = {'wanted':0,'actual':0,'forecast':0, 'reserved':0}
+            din[name]['plant_key'] = plant.id
+            din[name]['week_key'] = self.id
+    
+    def week_summary(self):
+        pgs = self.plantgrow
+        rsvs = self.reserves
+        
+        pgd = {}
+        for pg in pgs:
+            plant = pg.plant.get()
+            name = plant.display_name
+            self.chk_create(pgd,name,plant)            
+            pgd[name]['actual'] = pgd[name]['actual'] + pg.actual
+            pgd[name]['wanted'] = pgd[name]['wanted'] + pg.want_qty
+            
+            supps = pg.supplies
+            for supp in supps:
+                pgd[name]['forecast'] = pgd[name]['forecast'] + supp.forecast
+            
+        for rsv in rsvs:
+            pps = rsv.product.get().product_plants
+            for pp in pps:
+                plant = pp.plant.get()
+                name = plant.display_name
+                self.chk_create(pgd, name, plant) 
+                pgd[name]['reserved'] = pgd[name]['reserved'] + (pp.qty * rsv.num_reserved)
+        
+        return pgd
+    
 class Supplier(NDBBase):
     """ Represents the supplier of plants """
     name = ndb.StringProperty(required=True)
@@ -110,17 +146,24 @@ class Supplier(NDBBase):
         return PlantGrow.query(PlantGrow.supplier == self.key)
 
 class PlantGrow(NDBBase):
-    """ This is the class that will track orders of plants from different suppliers """
+    """ This is the class represents all plants that are available during a specific week """
     plant = ndb.KeyProperty(kind=Plant)
     finish_week = ndb.KeyProperty(kind=GrowWeek)
-    supplier = ndb.KeyProperty(kind=Supplier)
     actual = ndb.IntegerProperty(default=0)
-    actual_qty = ndb.IntegerProperty(default=0)
+    want_qty = ndb.IntegerProperty(default=0)
+    
+    @property
+    def supplies(self):
+        return PlantGrowSupply.query(PlantGrowSupply.plantgrow == self.key)
+    
+    
+class PlantGrowSupply(NDBBase):
+    ''' this class represents the supply of plants for a given week '''
+    plantgrow = ndb.KeyProperty(kind=PlantGrow, required=True)
+    supplier = ndb.KeyProperty(kind=Supplier, required=True)
     forecast = ndb.IntegerProperty(default=0)
-    forecast_qty = ndb.IntegerProperty(default=0)
     confirmation_num = ndb.StringProperty()
     cost = ndb.FloatProperty()
-    sale_price = ndb.FloatProperty()
    
 class Concept(NDBBase):
     """ many plants can be combined to create 1 concept """
@@ -134,6 +177,7 @@ class Concept(NDBBase):
 class Product(NDBBase):
     ''' this is the product name for customers '''
     name = ndb.StringProperty(required=True)
+    sale_price = ndb.FloatProperty(default=0.0)
     
     @property
     def product_concepts(self):
@@ -142,6 +186,10 @@ class Product(NDBBase):
     @property
     def product_reserve(self):
         return ProductReserve.query(ProductReserve.product == self.key)
+    
+    @property
+    def product_plants(self):
+        return ProductPlant.query(ProductPlant.product == self.key)
  
 class ProductPlant(NDBBase):
     ''' this relates plants to products '''

@@ -12,9 +12,10 @@ from flask import flash, redirect, url_for, render_template, request
 from google.appengine.runtime.apiproxy_errors import CapabilityDisabledError
 
 from application.forms import WeekForm
-from application.models import GrowWeek,PlantGrow, ProductReserveWrap
-from application.models import ProductPlant, ProductReserve
-from google.appengine.ext.db import Model,Query
+from application.models import GrowWeek,PlantGrow, ProductReserveWrap, Plant,\
+    ProductPlant
+from application.models import ProductPlant, ProductReserve,Plant
+from google.appengine.ext.ndb import Model,Query,Key
 
 from application.decorators import login_required
 #from datetime import datetime
@@ -24,12 +25,12 @@ class AdminListWeeks(View):
 
     @login_required
     def dispatch_request(self):
-        weeks = Query(GrowWeek)
+        weeks = GrowWeek.query().order(GrowWeek.week_monday)
         tday = datetime.date.today()
         d = datetime.timedelta(days=-14)
         t = tday + d
-        weeks.filter('week_monday >= ',t)
-        weeks.order('week_monday')
+        weeks = weeks.filter(GrowWeek.week_monday >= t)
+        #weeks.order(GrowWeek.week_monday)
         form = WeekForm()
         errors = 0
         if form.validate_on_submit():
@@ -55,35 +56,10 @@ class AdminListWeeks(View):
 
 class AdminShowWeek(View):
     
-    def chk_create(self, din, name, plant, week):
-        if name not in din.keys():
-            din[name] = {'actual':0,'actual_qty':0,'forecast':0,'forecast_qty':0, 'reserved':0}
-            din[name]['plant_key'] = plant.key()
-            din[name]['week_key'] = week.key()
-    
     @login_required
     def dispatch_request(self,week_id):
-        week = Model.get(week_id)
-        pgs = week.plantgrow
-        rsvs = week.reserves
-        
-        pgd = {}
-        for pg in pgs:
-            name = pg.plant.display_name
-            self.chk_create(pgd,name,pg.plant,week)            
-            pgd[name]['actual'] = pgd[name]['actual'] + pg.actual
-            pgd[name]['actual_qty'] = pgd[name]['actual_qty'] + pg.actual_qty
-            pgd[name]['forecast'] = pgd[name]['forecast'] + pg.forecast
-            pgd[name]['forecast_qty'] = pgd[name]['forecast_qty'] + pg.forecast_qty
-        
-        for rsv in rsvs:
-            cplants = rsv.concept.concept_plants
-            for cplant in cplants:
-                name = cplant.plant.display_name
-                self.chk_create(pgd, name, cplant.plant, week)
-                pgd[name]['reserved'] = pgd[name]['reserved'] + \
-                                         (cplant.qty * rsv.num_reserved)
-            
+        week = Key(GrowWeek,week_id).get()
+        pgd = week.week_summary()
         
         return render_template("show_week.html",week=week,plantgrows=pgd)
 
@@ -91,25 +67,27 @@ class AdminShowPlantWeek(View):
     
     @login_required
     def dispatch_request(self,week_id,plant_id):
-        pg = Query(PlantGrow)
-        week = Model.get(week_id)
-        plant = Model.get(plant_id)
-        pg.filter('plant = ',plant)
-        pg.filter('finish_week = ',week)
-        
-        cps = Query(ProductPlant)
-        cps.filter('plant = ',plant)
+        pg = PlantGrow.query()
+        week = Key(GrowWeek,week_id)
+        plant = Key(Plant,plant_id)
+        pg = pg.filter(PlantGrow.plant == plant)
+        pg = pg.filter(PlantGrow.finish_week == week)   
+        pweeks = pg.get()
+            
+        pps = ProductPlant.query()
+        pps = pps.filter(ProductPlant.plant == plant)
         cr_list = []
-        for cp in cps:
-            crs = Query(ProductReserve)
-            crs.filter('product = ',cp.concept)
-            crs.filter('finish_week = ',week)
+        for pp in pps:
+            crs = ProductReserve.query()
+            crs = crs.filter(ProductReserve.product == pp.product)
+            crs = crs.filter(ProductReserve.finish_week == week)
+            
             for cr in crs:
                 crw = ProductReserveWrap(cr)
-                crw.plant_name = plant.display_name
-                crw.incr_plant(cp.qty * crw.cr.num_reserved)
+                crw.plant_name = plant.get().display_name
+                crw.incr_plant(pp.qty * crw.pr.num_reserved)
                 cr_list.append(crw)
             
-        return render_template("show_plantweek.html",week=week, plant=plant, pweeks=pg, creserve=cr_list)
+        return render_template("show_plantweek.html",week=week.get(), plant=plant.get(), pweeks=pweeks.supplies, creserve=cr_list)
         
         

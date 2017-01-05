@@ -20,7 +20,7 @@
         </thead>
         <tbody>
             {% for week in weeks %}
-            {% set week_id = week.key() %}
+            {% set week_id = week.id %}
             <tr>
                 <td>{{ week.week_monday }}</td>
                 <td>{{ week.year }}</td>

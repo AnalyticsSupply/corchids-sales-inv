@@ -13,10 +13,9 @@
         <thead>
             <tr>
                 <th>Plant</th>
+                <th>Wanted</th>
                 <th>Actual</th>
-                <th>Actual QTY</th>
                 <th>Forecast</th>
-                <th>Forecast QTY</th>
                 <th>Reserved</th>
                 <th>&nbsp;</th>
             </tr>
@@ -26,13 +25,12 @@
 
             <tr>
                 <td>{{ pg }}</td>
+                <td>{{ plantgrows[pg].wanted }}</td>
                 <td>{{ plantgrows[pg].actual }}</td>
-                <td>{{ plantgrows[pg].actual_qty }}</td>
                 <td>{{ plantgrows[pg].forecast }}</td>
-                <td>{{ plantgrows[pg].forecast_qty }}</td>
                 <td>{{ plantgrows[pg].reserved }}</td>
                 <td>
-                    <form method="get" action="{{ url_for('show_plantweek', week_id=week.key(), plant_id=plantgrows[pg]['plant_key']) }}">
+                    <form method="get" action="{{ url_for('show_plantweek', week_id=week.id, plant_id=plantgrows[pg]['plant_key']) }}">
                         <button class="btn">View</button>
                     </form>
                 </td>

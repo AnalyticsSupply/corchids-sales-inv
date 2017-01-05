@@ -15,9 +15,8 @@ from wtforms import fields
 from flask_wtf import FlaskForm
 from wtforms.validators import DataRequired
 from wtforms.ext.appengine.ndb import model_form as mf1
-from wtforms.ext.appengine.db import model_form as mf2
 
-from application.models import RouteEntryMain,RouteStops,GrowWeek
+from application.models import RouteEntryMain,RouteStops,GrowWeek,PlantGrowSupply
 
 
 class RestUserAdd(FlaskForm):
@@ -48,6 +47,8 @@ WeekForm = mf1(GrowWeek, FlaskForm,
             field_args={
                 'week_number' : dict(validators=[DataRequired()]),
                 'year' : dict(validators=[DataRequired()])  })
+
+PlantGrowSupplyForm = mf1(PlantGrowSupply, FlaskForm)
 
 StopForm = mf1(RouteStops, FlaskForm, field_args={
     'stop_ship_to': dict(validators=[DataRequired()],label='Ship To'),

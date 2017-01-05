@@ -48,5 +48,9 @@ import restful
 def rest_impl(path):
     return restful.process_rest_request(path, request,make_response())
 
+@app.route('/week_summary/<int:year>/<int:week_num>', methods=['GET'])
+def get_summary(year, week_num):
+    return restful.get_week_summary(year, week_num)
+
 if __name__ == "__main__":
     app.run()

@@ -14,27 +14,19 @@
         <thead>
             <tr>
                 <th>Supplier</th>
-                <th>Actual</th>
-                <th>Actual QTY</th>
                 <th>Forecast</th>
-                <th>Forecast QTY</th>
                 <th>Confirmation Number</th>
                 <th>Cost</th>
-                <th>Sale Price</th>
             </tr>
         </thead>
         <tbody>
             {% for plantweek in pweeks %}
 
             <tr>
-                <td>{{ plantweek.supplier.name }}</td>
-                <td>{{ plantweek.actual }}</td>
-                <td>{{ plantweek.actual_qty }}</td>
+                <td>{{ plantweek.supplier.get().name }}</td>
                 <td>{{ plantweek.forecast }}</td>
-                <td>{{ plantweek.forecast_qty }}</td>
                 <td>{{ plantweek.confirmation_num }}</td>
                 <td>{{ plantweek.cost }}</td>
-                <td>{{ plantweek.sale_price }}</td>
             </tr>
             {% else %}
             <tr><td colspan="8">No weeks Found</td></tr>
@@ -58,7 +50,6 @@
                 <th>Concept Name</th>
                 <th>Concept Reserve</th>
                 <th>{{ plant.display_name }}</th>
-                <th>Ship Date</th>
                 <th>Shipped</th>
             </tr>
         </thead>
@@ -66,12 +57,11 @@
             {% for crw in creserve %}
 
             <tr>
-                <td>{{ crw.cr.customer.customer_name }}</td>
-                <td>{{ crw.cr.concept.name }}</td>
-                <td>{{ crw.cr.num_reserved }}</td>
+                <td>{{ crw.pr.customer.get().customer_name }}</td>
+                <td>{{ crw.pr.product.get().name }}</td>
+                <td>{{ crw.pr.num_reserved }}</td>
                 <td>{{ crw.plant_reserve }}</td>
-                <td>{{ crw.cr.ship_date }}</td>
-                <td>{{ crw.cr.shipped }}</td>
+                <td>{{ crw.pr.shipped }}</td>
             </tr>
             {% else %}
             <tr><td colspan="8">No weeks Found</td></tr>
