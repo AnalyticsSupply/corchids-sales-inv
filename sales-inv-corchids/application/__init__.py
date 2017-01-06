@@ -4,6 +4,7 @@ Initialize Flask app
 """
 from flask import Flask, jsonify, request, make_response
 import os
+import traceback
 from flask_debugtoolbar import DebugToolbarExtension
 from werkzeug.debug import DebuggedApplication
 
@@ -51,6 +52,15 @@ def rest_impl(path):
 @app.route('/week_summary/<int:year>/<int:week_num>', methods=['GET'])
 def get_summary(year, week_num):
     return restful.get_week_summary(year, week_num)
+
+
+@app.route('/plantgrow/update/',methods=['GET','POST'])
+def upd_plantgrow():
+    try:
+        jpg = request.get_json()
+        return restful.update_plant_grow(jpg['plant'], jpg['week'], jpg['wanted'], jpg['actual'])
+    except Exception:
+        return traceback.format_exc()
 
 if __name__ == "__main__":
     app.run()

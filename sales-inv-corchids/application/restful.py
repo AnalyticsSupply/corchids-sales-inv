@@ -67,6 +67,10 @@ def get_week_summary(year, week_num):
             dlist.append(d)
         resp = dlist
     return jsonify(resp)
+
+@login_required
+def update_plant_grow(plant_key, week_key, wanted, actual):
+    return jsonify(PlantGrow.update_plantgrow(plant_key, week_key, wanted, actual))
         
 #class PlantSvc(Resource):
 #        def get(self):

@@ -15,21 +15,23 @@
        <a class="" href="{{ url_for('list_weeks') }}"><BR>List All Weeks</a></div>
        <div class="col-xs-12 col-md-8">
           <h3>Week #, in </h3>
-          <table class="table table-bordered table-striped">
+        <div class="table-responsive">
+        <table class="table table-condensed">
         <thead>
             <tr>
                 <th>Plant</th>
-                <th>Wanted</th>
-                <th>Actual</th>
                 <th>Forecast</th>
                 <th>Reserved</th>
+                <th>Wanted</th>
+                <th>Actual</th>
+                <th>&nbsp;</th>
                 <th>&nbsp;</th>
             </tr>
         </thead>
         <tbody id="summary">
             
         </tbody>
-    </table>
+    </table></div>
        </div>
        
     </div>
@@ -73,5 +75,12 @@
         function show_modal() {
             $('.modal').modal('show');
         }
+        
+        function handle_update(plant_key, week_key, message){
+        	var wanted = Number($("span#"+plant_key+"_"+week_key+"_wanted").text());
+        	var actual = Number($("span#"+plant_key+"_"+week_key+"_actual").text());
+        	update_plantgrow(plant_key,week_key,wanted,actual,message);
+        }
+        
     </script>
 {% endblock tail_script %}

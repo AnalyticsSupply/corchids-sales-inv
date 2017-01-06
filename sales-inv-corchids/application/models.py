@@ -157,6 +157,23 @@ class PlantGrow(NDBBase):
         return PlantGrowSupply.query(PlantGrowSupply.plantgrow == self.key)
     
     
+    @classmethod
+    def update_plantgrow(cls, plant_key, week_key, wanted, actual):
+        resp = {'status':'success','msg':'PlantGrow Updated Successfully'}
+        try:
+            qry = PlantGrow.query().filter(PlantGrow.plant == ndb.Key(Plant,plant_key)).filter(PlantGrow.finish_week == ndb.Key(GrowWeek,week_key))
+            pg = qry.get()
+            if pg:
+                pg.want_qty = wanted
+                pg.actual = actual
+                pg.put()
+            else:
+                resp = {'status':'failed','msg':'No record found to update'}
+        except Exception as e:
+            resp = {'status':'failed','msg': str(e)}
+        return resp
+    
+    
 class PlantGrowSupply(NDBBase):
     ''' this class represents the supply of plants for a given week '''
     plantgrow = ndb.KeyProperty(kind=PlantGrow, required=True)
