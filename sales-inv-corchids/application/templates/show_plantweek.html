@@ -6,17 +6,19 @@
 {% endblock %}
 
 {% block content %}
-    <div><img src="/static/img/{{ plant.image_name }}" alt="{{ plant.display_name }}"></div>
-    <div>
-    <h1 id="">GROWING: {{ plant.display_name }}, for week {{ week.week_number }}, {{ week.year }}</h1>
-    <div>&nbsp;</div>
-    <table class="table table-bordered table-striped">
+    <div class="row">
+    <div class="col-xs-12 col-md-12"><h2>Week Summary for {{ plant.display_name }}</h2></div>
+    <div class="col-xs-6 col-md-4"><img src="/static/img/{{ plant.image_name }}" alt="{{ plant.display_name }}" class="img-thumbnail"></div>
+    <div class="col-xs-12 col-md-8"><h3 id="">GROWING: {{ plant.display_name }}, for week {{ week.week_number }}, {{ week.year }}</h3></div>
+    <div class="col-xs-6 col-md-4">&nbsp;</div>
+    <div class="col-xs-12 col-md-8">
+    <div class="table-responsive">
+    <table class="table table-condensed">
         <thead>
             <tr>
                 <th>Supplier</th>
                 <th>Forecast</th>
                 <th>Confirmation Number</th>
-                <th>Cost</th>
             </tr>
         </thead>
         <tbody>
@@ -26,31 +28,30 @@
                 <td>{{ plantweek.supplier.get().name }}</td>
                 <td>{{ plantweek.forecast }}</td>
                 <td>{{ plantweek.confirmation_num }}</td>
-                <td>{{ plantweek.cost }}</td>
             </tr>
             {% else %}
             <tr><td colspan="8">No weeks Found</td></tr>
             {% endfor %}
         </tbody>
-    </table>
+    </table></div>
     <p>
         <a class="btn btn-primary" onclick="show_modal()">
             <i class="icon-plus-sign icon-white"></i>
             Add Crop
         </a>
     </p></div>
-    
-     <div>
-    <h1 id="">RESERVED: {{ plant.display_name }}, for week {{ week.week_number }}, {{ week.year }}</h1>
-    <div>&nbsp;</div>
-    <table class="table table-bordered table-striped">
+    <div class="col-xs-6 col-md-4">&nbsp;</div>
+    <div class="col-xs-12 col-md-8"><h3 id="">RESERVED: {{ plant.display_name }}, for week {{ week.week_number }}, {{ week.year }}</h3></div>
+    <div class="col-xs-6 col-md-4">&nbsp;</div>
+    <div class="col-xs-12 col-md-8">
+    <div class="table-responsive">
+    <table class="table table-condensed">
         <thead>
             <tr>
                 <th>Customer</th>
                 <th>Concept Name</th>
                 <th>Concept Reserve</th>
                 <th>{{ plant.display_name }}</th>
-                <th>Shipped</th>
             </tr>
         </thead>
         <tbody>
@@ -61,19 +62,18 @@
                 <td>{{ crw.pr.product.get().name }}</td>
                 <td>{{ crw.pr.num_reserved }}</td>
                 <td>{{ crw.plant_reserve }}</td>
-                <td>{{ crw.pr.shipped }}</td>
             </tr>
             {% else %}
             <tr><td colspan="8">No weeks Found</td></tr>
             {% endfor %}
         </tbody>
-    </table>
+    </table></div>
     <p>
         <a class="btn btn-primary" onclick="show_modal()">
             <i class="icon-plus-sign icon-white"></i>
             Add Reserve
         </a>
-    </p></div>
+    </p></div></div>
 
 
 
