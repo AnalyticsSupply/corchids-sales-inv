@@ -26,6 +26,7 @@
                 <th>Actual</th>
                 <th>&nbsp;</th>
                 <th>&nbsp;</th>
+                <th>&nbsp;</th>
             </tr>
         </thead>
         <tbody id="summary">
@@ -39,6 +40,10 @@
  
 {% endblock content %}
 
+
+{% block footer %}
+    {% include 'notes_modal.html' %} {# pull in notes_modal form (modal dialog) #}
+{% endblock footer %}
 
 {% block tail_script %}
     {% if errors == 1 %}
@@ -80,6 +85,137 @@
         	var wanted = Number($("span#"+plant_key+"_"+week_key+"_wanted").text());
         	var actual = Number($("span#"+plant_key+"_"+week_key+"_actual").text());
         	update_plantgrow(plant_key,week_key,wanted,actual,message);
+        }
+        
+        var modal = document.getElementById('myModal');
+
+        var notes = {
+          notes_1: [{
+            note: 'This is great',
+            added_by: 'J-Dawg',
+            add_date: '01/11/2017'
+          }, {
+            note: 'Well it is not that great',
+            added_by: 'Mister T',
+            add_date: '01/12/2017'
+          }]
+        }
+
+
+        // Get the button that opens the modal
+        var btn = document.getElementById("myBtn");
+
+        // Get the <span> element that closes the modal
+        var span = document.getElementsByClassName("close")[0];
+        
+        function showNotes(notesId) {
+        	  // store the notes id
+        	  console.log("showing for notes: " + notesId)
+        	  d3.select('[id="note_id_storage"]').text(notesId);
+        	  d3.select('[id="note_title"]').text("notes for id: " + notesId);
+        	  // get notes
+        	  //var myNotes = getNotes(notesId);
+        	  get_notes(notesId, function(myNotes){
+        	     var arrayLength = myNotes.length;
+        	     for (var i = 0; i < arrayLength; i++) {
+        	       addRow(notesId, myNotes[i].noteId, myNotes[i]);
+        	     }
+        	     if (arrayLength == 0) {
+        	       d3.select(".modal-body").append("h3").attr('class', 'no-note-msg').text("No existing notes");
+        	     }
+        	     modal.style.display = "block";
+        	  });
+        }
+        
+     // When the user clicks on <span> (x), close the modal
+        span.onclick = function() {
+          d3.select(".no-note-msg").remove();
+          modal.style.display = "none";
+          d3.selectAll('tr.added-note').remove();
+        }
+
+        function removeNote(notes_id, row_id) {
+          // to be converted to ajax function
+          var noteId = Number(row_id.split("-")[1]);
+          var new_notes = [];
+          var myNotes = getNotes(notes_id);
+          var arrayLength = myNotes.length;
+          for (var i = 0; i < arrayLength; i++) {
+            if (i != noteId) {
+              new_notes.push(myNotes[i]);
+            }
+          }
+          var newLength = new_notes.length;
+          if (newLength == 0) {
+            d3.select(".modal-body").append("h3").attr('class', 'no-note-msg').text("No existing notes");
+          }
+          saveNotes(notes_id, new_notes);
+        }
+
+        function addNote(notes_id, anote) {
+          // to be converted to ajax function
+          var myNotes = getNotes(notes_id);
+          var arrayLength = myNotes.length;
+          myNotes.push(anote);
+          saveNotes(notes_id, myNotes);
+          return arrayLength;
+        }
+
+        function getNotes(notesId) {
+          // to be converted to ajax function
+          var row = "notes_" + notesId;
+          if (notes.hasOwnProperty(row)) {
+            return notes[row];
+          }
+          notes[row] = [];
+          return [];
+        }
+
+        function saveNotes(notesId, argNotes) {
+          var row = "notes_" + notesId;
+          notes[row] = argNotes;
+        }
+
+        var button = document.getElementById('note-add');
+        var formatADate = d3.timeFormat("%m/%d/%Y")
+        button.onclick = function() {
+          d3.select(".no-note-msg").remove();
+          var notesId = d3.select('[id="note_id_storage"]').text();
+          var anote = $("#note-input").val();
+
+          if (anote.length > 0) {
+            var addDay = formatADate(new Date());
+            // add ajax call to add to service
+            var noteInfo = {
+              note: anote,
+              added_by: 'current user',
+              add_date: addDay
+            };
+            save_note(notesId, noteInfo, function(notesId, noteId, noteInfo){
+            	addRow(notesId,noteId,noteInfo);
+            });
+            
+          }
+
+
+          $("#note-input").val("");
+        }
+
+        function addRow(notesId, noteId, noteInfo) {
+          var tr = d3.select('[id="modal-table"]')
+            .select('tbody').append('tr');
+          tr.attr('class', 'added-note')
+            .attr('id', noteId)
+            .append('td')
+            .text(noteInfo.note);
+          tr.append('td').text(noteInfo.added_by);
+          tr.append('td').text(noteInfo.added_date);
+          tr.append('td').html('<span class="close">&times;</span>')
+            .on('click', function() {
+              //removeNote(notesId, noteId);
+                 delete_note(noteId);
+                 d3.select(this.parentNode).remove();
+            });
         }
         
     </script>

@@ -12,9 +12,8 @@ from flask import flash, redirect, url_for, render_template, request
 from google.appengine.runtime.apiproxy_errors import CapabilityDisabledError
 
 from application.forms import WeekForm
-from application.models import GrowWeek,PlantGrow, ProductReserveWrap, Plant,\
-    ProductPlant
-from application.models import ProductPlant, ProductReserve,Plant
+from application.models import GrowWeek,PlantGrow, ProductReserveWrap, Supplier, Customer
+from application.models import ProductPlant, ProductReserve,Plant,Product
 from google.appengine.ext.ndb import Model,Query,Key
 
 from application.decorators import login_required
@@ -66,28 +65,36 @@ class AdminShowWeek(View):
 class AdminShowPlantWeek(View):
     
     @login_required
-    def dispatch_request(self,week_id,plant_id):
-        pg = PlantGrow.query()
-        week = Key(GrowWeek,week_id)
-        plant = Key(Plant,plant_id)
-        pg = pg.filter(PlantGrow.plant == plant)
-        pg = pg.filter(PlantGrow.finish_week == week)   
-        pweeks = pg.get()
+    def dispatch_request(self,plantgrow_id):
+        suppliers = Supplier.query()
+        customers = Customer.query()
+        products = Product.query()
+        
+        pg = PlantGrow.get_by_id(int(plantgrow_id))
+        #week = Key(GrowWeek,week_id)
+        #plant = Key(Plant,plant_id)
+        #pg = pg.filter(PlantGrow.plant == plant)
+        #pg = pg.filter(PlantGrow.finish_week == week)   
+        #pweeks = pg.get()
+        
+        plant = pg.plant.get()
+        week = pg.finish_week.get()
             
         pps = ProductPlant.query()
-        pps = pps.filter(ProductPlant.plant == plant)
+        pps = pps.filter(ProductPlant.plant == plant.key)
         cr_list = []
         for pp in pps:
             crs = ProductReserve.query()
             crs = crs.filter(ProductReserve.product == pp.product)
-            crs = crs.filter(ProductReserve.finish_week == week)
+            crs = crs.filter(ProductReserve.finish_week == week.key)
             
             for cr in crs:
                 crw = ProductReserveWrap(cr)
-                crw.plant_name = plant.get().display_name
+                crw.plant_name = plant.display_name
                 crw.incr_plant(pp.qty * crw.pr.num_reserved)
                 cr_list.append(crw)
             
-        return render_template("show_plantweek.html",week=week.get(), plant=plant.get(), pweeks=pweeks.supplies, creserve=cr_list)
+        return render_template("show_plantweek.html",week=week, plant=plant, pweeks=pg.supplies, plantgrow = plantgrow_id,
+                               creserve=cr_list,suppliers=suppliers, customers=customers,products=products)
         
         

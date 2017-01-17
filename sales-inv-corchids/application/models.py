@@ -10,6 +10,8 @@ from google.appengine.ext import ndb
 #from google.appengine.ext import db
 from werkzeug.security import generate_password_hash
 
+from datetime import datetime
+
 
 class NDBBase(ndb.Model):
     added_by = ndb.UserProperty(auto_current_user_add=True)
@@ -41,6 +43,31 @@ class NDBBase(ndb.Model):
         if self._has_complete_key():
             return getattr(self, "_is_saved", False)
         return False
+    
+    def convert_bool(self, value):
+        if str(value).lower().strip()  == "true":
+            return True
+        
+        if str(value).lower().strip() == "1":
+            return True
+        return False
+    
+    def update_resp(self):
+        resp = {'status':'success','msg':'Updated Successfully'}
+        try:
+            key = self.put()
+            resp['key'] = key.id()
+        except Exception as e:
+            resp = {'status':'failed','msg': str(e)}
+        return resp
+    
+    def delete_resp(self):
+        resp = {'status':'success','msg':'Deleted Successfully'}
+        try:
+            self.key.delete()
+        except Exception as e:
+            resp = {'status':'failed','msg': str(e)}
+        return resp
 
 class User:
     pw_hash = None
@@ -122,6 +149,7 @@ class GrowWeek(NDBBase):
             self.chk_create(pgd,name,plant)            
             pgd[name]['actual'] = pgd[name]['actual'] + pg.actual
             pgd[name]['wanted'] = pgd[name]['wanted'] + pg.want_qty
+            pgd[name]['id'] = pg.id
             
             supps = pg.supplies
             for supp in supps:
@@ -158,14 +186,18 @@ class PlantGrow(NDBBase):
     
     
     @classmethod
+    def get_plantgrow(cls, argPlant, argWeek):
+        qry = PlantGrow.query().filter(PlantGrow.plant == ndb.Key(Plant,argPlant)).filter(PlantGrow.finish_week == ndb.Key(GrowWeek,argWeek))
+        return qry.get()
+    
+    @classmethod
     def update_plantgrow(cls, plant_key, week_key, wanted, actual):
         resp = {'status':'success','msg':'PlantGrow Updated Successfully'}
         try:
-            qry = PlantGrow.query().filter(PlantGrow.plant == ndb.Key(Plant,plant_key)).filter(PlantGrow.finish_week == ndb.Key(GrowWeek,week_key))
-            pg = qry.get()
+            pg = PlantGrow.get_plantgrow(plant_key, week_key)
             if pg:
-                pg.want_qty = wanted
-                pg.actual = actual
+                pg.want_qty = int(wanted)
+                pg.actual = int(actual)
                 pg.put()
             else:
                 resp = {'status':'failed','msg':'No record found to update'}
@@ -173,7 +205,33 @@ class PlantGrow(NDBBase):
             resp = {'status':'failed','msg': str(e)}
         return resp
     
+class PlantGrowNotes(NDBBase):
+    note = ndb.StringProperty(required=True)
+    plant_grow = ndb.KeyProperty(kind=PlantGrow)
     
+    @classmethod
+    def get_notes(cls, plant_grow_key):
+        qry = PlantGrowNotes.query().filter(PlantGrowNotes.plant_grow == ndb.Key(PlantGrow,int(plant_grow_key)))
+        note_list = []
+        for note in qry:
+            note_list.append({'noteId':note.id,'note':note.note,'added_by':note.added_by.email(),'added_date':note.timestamp.strftime("%m/%d/%Y")})
+        return note_list
+    
+    @classmethod
+    def save_note(cls,note, plantgrow_key):
+        pgn = PlantGrowNotes()
+        pgn.note = note
+        pgn.plant_grow = ndb.Key(PlantGrow,int(plantgrow_key))
+            
+        return pgn.update_resp()
+    
+    @classmethod
+    def delete_note(cls, note_id):
+        pgn = PlantGrowNotes.get_by_id(int(note_id))
+        return pgn.delete_resp()
+        
+    
+     
 class PlantGrowSupply(NDBBase):
     ''' this class represents the supply of plants for a given week '''
     plantgrow = ndb.KeyProperty(kind=PlantGrow, required=True)
@@ -181,7 +239,18 @@ class PlantGrowSupply(NDBBase):
     forecast = ndb.IntegerProperty(default=0)
     confirmation_num = ndb.StringProperty()
     cost = ndb.FloatProperty()
-   
+    
+    @classmethod
+    def update(cls,argId, argPlant, argWeek, argSupplier, argForecast=0, argConfirmation=None, argCost=0):
+        pgs = PlantGrowSupply.get_by_id(int(argId))
+        pg = PlantGrow.get_plantgrow(int(argPlant), int(argWeek))
+        pgs.plantgrow = ndb.Key(PlantGrow,pg.id)
+        pgs.supplier = ndb.Key(Supplier,int(argSupplier))
+        pgs.forecast = int(argForecast)
+        pgs.confirmation_num = str(argConfirmation)
+        pgs.cost = int(argCost)
+        return pgs.update_resp()
+         
 class Concept(NDBBase):
     """ many plants can be combined to create 1 concept """
     name = ndb.StringProperty(required=True)
@@ -225,6 +294,16 @@ class ProductReserve(NDBBase):
     product = ndb.KeyProperty(kind=Product)
     num_reserved = ndb.IntegerProperty(default=0)
     shipped = ndb.BooleanProperty()    
+    
+    @classmethod
+    def update(cls,argId, argCustomer, argWeek, argProduct, argReserved=0, argShipped=False):
+        pr = ProductReserve.get_by_id(long(argId))
+        pr.customer = ndb.Key(Customer,int(argCustomer))
+        pr.finish_week = ndb.Key(GrowWeek,int(argWeek))
+        pr.product = ndb.Key(Product,int(argProduct))
+        pr.num_reserved = int(argReserved)
+        pr.shipped = pr.convert_bool(argShipped)
+        return pr.update_resp()
 
 class ProductReserveWrap():
     
@@ -232,6 +311,7 @@ class ProductReserveWrap():
         self.pr = product_reserve
         self.plant_name = None
         self.plant_reserve = 0
+        self.id = product_reserve.id
         
     def incr_plant(self, num):
         self.plant_reserve = self.plant_reserve + num

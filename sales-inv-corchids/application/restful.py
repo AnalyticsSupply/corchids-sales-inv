@@ -6,9 +6,10 @@ Created on Dec 17, 2016
 THis is just my way of making the REST stuff work
 '''
 from application.models import Plant,Customer,GrowWeek,Supplier, Concept,PlantGrow,Product,ProductConcept,\
-    ProductReserve,ProductPlant,PlantGrowSupply
+    ProductReserve,ProductPlant,PlantGrowSupply, PlantGrowNotes
 
 from application.views.admin import authen
+from datetime import datetime
 from application.rest import DispatcherException, Dispatcher
 from flask import make_response,jsonify
 
@@ -55,7 +56,9 @@ def process_rest_request(path, request,response):
 
 @login_required
 def get_week_summary(year, week_num):
-    qry = GrowWeek.query(GrowWeek.year == year, GrowWeek.week_number == week_num)
+    day =  str(year)+'-'+str(week_num)+'-1'
+    dt = datetime.strptime(day, '%Y-%W-%w')
+    qry = GrowWeek.query(GrowWeek.week_monday == dt)
     week = qry.get()
     resp = {}
     if week:
@@ -71,7 +74,27 @@ def get_week_summary(year, week_num):
 @login_required
 def update_plant_grow(plant_key, week_key, wanted, actual):
     return jsonify(PlantGrow.update_plantgrow(plant_key, week_key, wanted, actual))
-        
+
+@login_required
+def update_plantweek_entry(inData):
+    if inData['service_name'] == 'customer_reserve':
+        resp = ProductReserve.update(inData['id'],inData['customer'], inData['week'], inData['product'], inData['reserved'])
+        return jsonify(resp)
+    
+    if inData['service_name'] == 'supplier_plants':
+        resp = PlantGrowSupply.update(inData['id'], inData['plant'], inData['week'], inData['supplier'], inData['forecast'], inData['confirmation'])
+        return jsonify(resp)
+                                                                                                                                    
+
+@login_required
+def notes_wrapper(plantgrow_key=None,note_key=None, note="", method='save'):
+    if method == 'save':
+        return jsonify(PlantGrowNotes.save_note(note,plantgrow_key))
+    elif method == 'delete':
+        return jsonify(PlantGrowNotes.delete_note(note_key))
+    else:
+        return jsonify(PlantGrowNotes.get_notes(plantgrow_key))
+
 #class PlantSvc(Resource):
 #        def get(self):
 #            plants = Plants.query()

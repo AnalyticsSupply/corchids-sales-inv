@@ -8,8 +8,6 @@ import traceback
 from flask_debugtoolbar import DebugToolbarExtension
 from werkzeug.debug import DebuggedApplication
 
-from models import Plant
-
 app = Flask('application')
 
 if os.getenv('FLASK_CONF') == 'TEST':
@@ -49,6 +47,21 @@ import restful
 def rest_impl(path):
     return restful.process_rest_request(path, request,make_response())
 
+
+@app.route('/notes/save/<int:pg_key>',methods=['POST'])
+def save_note(pg_key):
+    #jin = request.form
+    jin = request.get_json(force=True)
+    return restful.notes_wrapper(plantgrow_key=pg_key, note = jin['note'], method='save')
+
+@app.route('/notes/get/<int:pg_key>',methods=['GET'])
+def get_notes(pg_key):
+    return restful.notes_wrapper(plantgrow_key=pg_key, method='get')
+
+@app.route('/notes/delete/<int:nt_key>',methods=['GET'])
+def delete_note(nt_key):
+    return restful.notes_wrapper(note_key=nt_key, method='delete')
+
 @app.route('/week_summary/<int:year>/<int:week_num>', methods=['GET'])
 def get_summary(year, week_num):
     return restful.get_week_summary(year, week_num)
@@ -59,6 +72,24 @@ def upd_plantgrow():
     try:
         jpg = request.get_json()
         return restful.update_plant_grow(jpg['plant'], jpg['week'], jpg['wanted'], jpg['actual'])
+    except Exception:
+        return traceback.format_exc()
+
+@app.route('/supplier_plants/update/',methods=['GET','POST'])
+def update_supplier_plants():
+    try:
+        uJson = request.get_json()
+        return restful.update_plantweek_entry(uJson)
+    except Exception:
+        msg = traceback.format_exc()
+        print(msg)
+        return {'status':'failed','msg': msg}
+    
+@app.route('/customer_reserve/update/',methods=['GET','POST'])
+def update_customer_reserve():
+    try:
+        uJson = request.get_json()
+        return restful.update_plantweek_entry(uJson)
     except Exception:
         return traceback.format_exc()
 
