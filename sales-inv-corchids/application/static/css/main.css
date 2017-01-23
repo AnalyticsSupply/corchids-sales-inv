@@ -14,6 +14,22 @@ body {
     background-color: #f4e6da;
 }
 
+.btn {
+    cursor: pointer;
+}
+
+span.close {
+  color: black;
+}
+
+td.edit-cell{
+  background-color: #fff;
+}
+
+td.display-cell{
+  background-color: transparent;
+}
+
 .save_row{
   display: none;
 }

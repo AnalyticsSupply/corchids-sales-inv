@@ -13,7 +13,7 @@
     <!-- <div class="col-xs-6 col-md-4">&nbsp;</div>  -->
     <div class="col-xs-12 col-md-12">
     <div class="table-responsive">
-    <table class="table table-condensed">
+    <table id="plantgrowsupply-table" class="table table-sm table-bordered">
         <thead>
             <tr>
                 <th>Supplier</th>
@@ -28,10 +28,10 @@
             <tr id='{{ plantweek.id }}'>
                 <td id='{{ plantweek.id }}_supplier'>{{ plantweek.supplier.get().name }}</td>
                 <td id='{{ plantweek.id }}_forecast'>{{ plantweek.forecast }}</td>
-                <td id='{{ plantweek.id }}_confirmation'>{{ plantweek.confirmation_num }}</td>
-                <td>
-                    <a id='{{ plantweek.id }}_edit' class="btn btn-primary edit_row" onclick="editRowSupp('{{ plantweek.id }}')">Edit</a>
-                    <a id='{{ plantweek.id }}_save' class="btn btn-primary save_row" onclick="saveRowSupp('{{ plantweek.id }}')">Save</a>
+                <td id='{{ plantweek.id }}_confirmation_num'>{{ plantweek.confirmation_num }}</td>
+                <td id='{{ plantweek.id }}_buttons'>
+                    <a id='{{ plantweek.id }}_edit' class="btn btn-primary edit_row" onclick="edit_row('{{ plantweek.id }}','plantgrowsupply')">Edit</a>
+                    <a id='{{ plantweek.id }}_save' class="btn btn-primary save_row" onclick="save_row('{{ plantweek.id }}','plantgrowsupply')">Save</a>
                 </td>
             </tr>
             {% else %}
@@ -40,7 +40,7 @@
         </tbody>
     </table></div>
     <p>
-        <a class="btn btn-primary" onclick="show_modal()">
+        <a class="btn btn-primary" onclick='add_row("plantgrowsupply")'>
             <i class="icon-plus-sign icon-white"></i>
             Add Crop
         </a>
@@ -50,7 +50,7 @@
    <!--  <div class="col-xs-6 col-md-4">&nbsp;</div> -->
     <div class="col-xs-12 col-md-12">
     <div class="table-responsive">
-    <table class="table table-condensed">
+    <table id="productreserve-table" class="table table-sm table-bordered">
         <thead>
             <tr>
                 <th>Customer</th>
@@ -65,11 +65,11 @@
             <tr id='{{ crw.id }}'>
                 <td id='{{ crw.id }}_customer'>{{ crw.pr.customer.get().customer_name }}</td>
                 <td id='{{ crw.id }}_product'>{{ crw.pr.product.get().name }}</td>
-                <td id='{{ crw.id }}_reserved'>{{ crw.pr.num_reserved }}</td>
+                <td id='{{ crw.id }}_num_reserved'>{{ crw.pr.num_reserved }}</td>
                 <td id='{{ crw.id }}_plreserved'>{{ crw.plant_reserve }}</td>
-                <td>
-                    <a id='{{ crw.id }}_edit' class="btn btn-primary edit_row" onclick="editRowCust('{{ crw.id }}')">Edit</a>
-                    <a id='{{ crw.id }}_save' class="btn btn-primary save_row" onclick="saveRowCust('{{ crw.id }}')">Save</a>
+                <td id='{{ crw.id }}_buttons'>
+                    <a id='{{ crw.id }}_edit' class="btn btn-primary edit_row" onclick="edit_row('{{ crw.id }}','productreserve')">Edit</a>
+                    <a id='{{ crw.id }}_save' class="btn btn-primary save_row" onclick="save_row('{{ crw.id }}','productreserve')">Save</a>
                 </td>
             </tr>
             {% else %}
@@ -78,7 +78,7 @@
         </tbody>
     </table></div>
     <p>
-        <a class="btn btn-primary" onclick="show_modal()">
+        <a class="btn btn-primary" onclick='add_row("productreserve")'>
             <i class="icon-plus-sign icon-white"></i>
             Add Reserve
         </a>
@@ -121,21 +121,35 @@
         };
         sOptions = {supplier:supp_options}
         rOptions = {customer:cust_options, product:prod_options}
-        sFields = {supplier:'o',forecast:'i',confirmation:'i'}
-        rFields = {customer:'o',product:'o',reserved:'i'}
+        sFields = {supplier:'o',forecast:'i',confirmation_num:'i'}
+        rFields = {customer:'o',product:'o',num_reserved:'i'}
         
-        function editRowSupp(rowId){
-        	editRow(rowId,sOptions,sFields);
+        function add_row(type){
+        	if (type == 'plantgrowsupply'){
+        		addRow("plantgrowsupply",sOptions, sFields, {plantgrow: {{ plantgrow }} });
+        	}
+        	if (type == 'productreserve'){
+        		addRow("productreserve",rOptions, rFields, {finish_week: {{ week.id }} });
+        	}
         }
-        function editRowCust(rowId){
-        	editRow(rowId,rOptions,rFields);
+        function edit_row(rowId, model_name){
+        	if (model_name == 'productreserve'){
+        		editRow(rowId,rOptions,rFields);
+        	}
+        	if (model_name == 'plantgrowsupply'){
+        		editRow(rowId,sOptions,sFields);
+        	}
         }
-        function saveRowSupp(rowId){
-        	saveRow(rowId,sOptions,sFields, {service_name: 'supplier_plants', week: week_id, plant: plant_id});
+        
+        function save_row(rowId, model_name){
+        	if (model_name == 'productreserve'){
+        		saveRow(rowId,rOptions,rFields, {service_name: 'customer_reserve', week: week_id, plant: plant_id});
+        	}
+        	if (model_name == 'plantgrowsupply'){
+        		saveRow(rowId,sOptions,sFields, {service_name: 'supplier_plants', week: week_id, plant: plant_id});
+        	}
         }
-        function saveRowCust(rowId){
-        	saveRow(rowId,rOptions,rFields, {service_name: 'customer_reserve', week: week_id, plant: plant_id});
-        }
+        
         $( function() {
             $( "#week_monday" ).datepicker({
             	  dateFormat: "yy-mm-dd"

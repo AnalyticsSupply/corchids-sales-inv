@@ -14,7 +14,7 @@ from application.rest import DispatcherException, Dispatcher
 from flask import make_response,jsonify
 
 from exceptions import AttributeError
-import sys
+import sys, traceback
 from application.decorators import login_required
 
 Dispatcher.base_url = "/rest"
@@ -42,11 +42,14 @@ def process_rest_request(path, request,response):
         response = d.response
     except DispatcherException as e:
         #if d.response.status_code == 200:
+        traceback.print_exc(file=sys.stdout)
         response = make_response("<html><body>{}: {}</body></html>".format(e.error_code,e.message),e.error_code)
     except AttributeError as err:
         print(err)
+        traceback.print_exc(file=sys.stdout)
         response = make_response("<html><body>{}: Attribute Error</body></html>".format(err.message),500)
     except:
+        traceback.print_exc(file=sys.stdout)
         print("Unexpected error:", sys.exc_info()[0])
         response = make_response("<html><body>{}: Bad Request</body></html>".format(sys.exc_info()[0]),500)
         
@@ -78,11 +81,11 @@ def update_plant_grow(plant_key, week_key, wanted, actual):
 @login_required
 def update_plantweek_entry(inData):
     if inData['service_name'] == 'customer_reserve':
-        resp = ProductReserve.update(inData['id'],inData['customer'], inData['week'], inData['product'], inData['reserved'])
+        resp = ProductReserve.update(inData['id'],inData['customer'], inData['week'], inData['product'], inData['num_reserved'])
         return jsonify(resp)
     
     if inData['service_name'] == 'supplier_plants':
-        resp = PlantGrowSupply.update(inData['id'], inData['plant'], inData['week'], inData['supplier'], inData['forecast'], inData['confirmation'])
+        resp = PlantGrowSupply.update(inData['id'], inData['plant'], inData['week'], inData['supplier'], inData['forecast'], inData['confirmation_num'])
         return jsonify(resp)
                                                                                                                                     
 

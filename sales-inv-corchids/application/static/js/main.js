@@ -138,6 +138,7 @@ function editRow(rowId, options, fields){
 		   {
 			  var opts = options[propertyName];
 			  var optField = $('#'+rowId+"_"+propertyName);
+			  optField.attr('class','edit-cell');
 			  var name = optField.text();
 			  var val = 0;
 			  for (i = 0; i < opts.length; i++) { 
@@ -162,7 +163,8 @@ function editRow(rowId, options, fields){
 			   var inField = $('#'+rowId+"_"+propertyName);
 			   var val = inField.text();
 			   inField.text("");
-			   inField.css("background-color",'#fff');
+			   //inField.css("background-color",'#fff');
+			   inField.attr('class','edit-cell');
 			   inField.css("color",'black');
 			   d3.select('[id="'+rowId+'_'+propertyName+'"]')
 			     .append('span')
@@ -188,6 +190,7 @@ function editRow(rowId, options, fields){
 				var ids = rowId+"_sel"+propertyName;
 				var optField = $('#'+ids);
 				var txtField = $('#'+idm);
+				txtField.attr('class','display-cell');
 				var val = optField.val();
 				var name = "";
 				for (i = 0; i < opts.length; i++) { 
@@ -203,6 +206,7 @@ function editRow(rowId, options, fields){
 			}
 			else{
 				var txtField = $('#'+idm);
+				txtField.attr('class','display-cell');	
 				var ids = rowId+"_span"+propertyName;
 				var sField = $('#'+ids);
 				var val = sField.text();
@@ -214,7 +218,12 @@ function editRow(rowId, options, fields){
 		}
 		$("#"+rowId+"_edit").show();
 	    $("#"+rowId+"_save").hide();
-        call_update_service(update);
+	    if (update.service_name == 'add'){
+	    	call_add_service(update.model_name,update);
+	    }
+	    else{
+	    	call_update_service(update);	
+	    }
 	}
 	
 	function call_update_service(update_fields){
@@ -241,6 +250,32 @@ function editRow(rowId, options, fields){
 		});
 	}
 	
+	function call_add_service(model_name, update_fields){
+		var rowId = update_fields.id;
+		delete update_fields.id;
+		delete update_fields.model_name;
+		delete update_fields.service_name;
+		
+		var inData = {};
+		inData[model_name] = update_fields;
+		$.ajax({
+			type: "POST",
+			url: "/rest/"+model_name+"/",
+			headers: { 
+		        Accept : "application/json; charset=utf-8",
+		        "Content-Type": "application/json; charset=utf-8"
+		    },
+		    data: JSON.stringify(inData),
+		    dataType: "json",
+		    success: function(data){
+		    	//var id = data.key;
+		    	set_message("Row Added Successfully");
+		    	convert_save(rowId,data,model_name);
+		    }
+		    
+			
+		});
+	}
 	function save_note(pg_id, note_info,process_func){
 		$.ajax({
 			type: "POST",
@@ -337,3 +372,64 @@ function editRow(rowId, options, fields){
 			        }
 		})
 	}
+	
+	function addRow(model_name, options, fields, data){
+		var tableId = model_name+"-table";	
+		var rowId = tableId+"-newrow";
+		data['id'] = rowId;
+		data['model_name'] = model_name;
+		data['service_name'] = 'add';
+		var tr = d3.select('[id="'+tableId+'"]')
+		  .select('tbody')
+		  .append('tr');
+		
+		tr.attr('id',rowId);
+		
+		for (var propertyName in fields){
+			tr.append('td')
+			  .attr('id',rowId+"_"+propertyName);
+		}
+		
+		tr.append('td')
+		  .attr('id',rowId+'_buttons')
+		  .append('a')
+		  .attr('id',rowId+"_save")
+		  .attr('class','btn btn-primary save_row')
+		  .on('click',function (){
+			  saveRow(rowId,options,fields,data);
+		  })
+		  .text('Save');
+		
+		//<a id='{{ crw.id }}_save' class="btn btn-primary save_row" onclick="saveRowCust('{{ crw.id }}')">Save</a>
+		
+		editRow(rowId,options,fields);
+				
+	}
+	
+	function convert_save(old_id, new_id,model_name){
+
+		 d3.select('[id="'+old_id+'"]')
+		  .attr('id',new_id)
+		  .selectAll('td')
+		  .each(function(){
+		      var oId = d3.select(this).attr('id');
+		      var end = oId.split("_")[1]
+		      d3.select(this).attr('id',oId.replace(old_id,new_id));
+		      if (end == 'buttons'){
+		         d3.select(this).append('a')
+		           .attr('id',new_id+"_edit")
+		           .attr('class','btn btn-primary edit_row')
+		           .on('click',function(){
+		               edit_row(new_id,model_name);
+		           })
+		           .text('Edit');
+		         d3.select('[id="'+old_id+"_save"+'"]')
+		           .attr('id',new_id+"_save")
+		           .on('click',function(){
+		              save_row(new_id,model_name)
+		           })
+		         $('#'+new_id+'_save').hide();
+		         $('#'+new_id+'_edit').show();
+		      }
+		  });
+		}
