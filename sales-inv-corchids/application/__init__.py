@@ -67,11 +67,16 @@ def get_summary(year, week_num):
     return restful.get_week_summary(year, week_num)
 
 
+@app.route('/plantgrow/availability/<int:plantgrow>', methods=['GET'])
+def get_availability(plantgrow):
+    avail = restful.get_availability(plantgrow)
+    return jsonify({'availability': avail})
+
 @app.route('/plantgrow/update/',methods=['GET','POST'])
 def upd_plantgrow():
     try:
         jpg = request.get_json()
-        return restful.update_plant_grow(jpg['plant'], jpg['week'], jpg['wanted'], jpg['actual'])
+        return restful.update_plant_grow(jpg['plant'], jpg['week'], jpg['actual'])
     except Exception:
         return traceback.format_exc()
 

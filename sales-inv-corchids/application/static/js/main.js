@@ -52,14 +52,19 @@ function clear_create_rows(wk_summ){
     
     wk_summ.forEach(function (row){
     	var tr = tbody.append('tr');
-    	tr.append('td').text(row.plant);
-    	tr.append('td').text(row.forecast);
-    	tr.append('td').text(row.reserved);
-    	tr.append('td').attr('id',row.id+"_"+"wanted").text(row.wanted);
+    	
+    	if (row.notes > 0){
+    		tr.append('td').attr('class','font-red').append('strong').text("* "+row.plant);
+    	}else{
+    		tr.append('td').text(row.plant);
+    	}
+    	tr.append('td').attr('id',row.id+"_"+"forecast").text(row.forecast);
+    	tr.append('td').attr('id',row.id+"_"+"reserved").text(row.reserved);
+    	tr.append('td').attr('id',row.id+"_"+"available").text(row.available);
     	tr.append('td').attr('id',row.id+"_"+"actual").text(row.actual);
         add_button_method(tr,'td','/plantweek/'+row.id,'view');
         var msg = "Update of "+row.plant+": ";
-        flds = {wanted:'i',actual:'i'};
+        flds = {actual:'i'};
         var td = tr.append('td');
                  td.append('a')
                        .attr('id',row.id+"_"+"edit")
@@ -74,6 +79,19 @@ function clear_create_rows(wk_summ){
                  .on('click', function(){
                 	 update = {service_name:'plantgrow',week:row.week_key,plant:row.plant_key};
                 	 saveRow(row.id,{},flds,update);
+                	 act = d3.select('[id="'+row.id+'_actual"]').text();
+                	 act = parseInt(act);
+                	 rsv = d3.select('[id="'+row.id+'_reserved"]').text();
+                	 rsv = parseInt(rsv);
+                	 fcast = d3.select('[id="'+row.id+'_forecast"]').text();
+                	 fcast = parseInt(rsv);
+                	 
+                	 avail = fcast - rsv;
+                	 if (act > 0){
+                		 avail = act - rsv;
+                	 }
+                	 d3.select('[id="'+row.id+'_available"]').text(avail);
+                	//var table = d3.select('[id="summary-top"]')
                  })
                  .text('Save');
        var td2 = tr.append('td');
@@ -300,19 +318,18 @@ function editRow(rowId, options, fields){
 	function display_notes(myNotes){
 		if (myNotes.length > 0){
 			//var table = d3.select('[id="summary-top"]')
-			var div = d3.select('.row').insert("div",":nth-child(2)")
-			  .append('div').attr('class','col-xs-12 col-md-12');
-			div.append('h3').text("... Notes ...");
-			var table = div.append('div').attr('class','table-responsive')
-			     .append('table');
+			//var div = d3.select('.row').insert("div",":nth-child(2)")
+			//  .append('div').attr('class','col-xs-12 col-md-12');
+			//div.append('h3').text("... Notes ...");
+			var table = d3.select('[id="notes-table"]')
 			
-			table.attr('class','table table-condensed');
+			//table.attr('class','table table-condensed');
 			  
-			var tr = table.append('thead').append('tr');
+			//var tr = table.append('thead').append('tr');
 			
-			tr.append('th').text("Note");
-			tr.append('th').text("Added By");
-			tr.append('th').text("Added Date");
+			//tr.append('th').text("Note");
+			//tr.append('th').text("Added By");
+			//tr.append('th').text("Added Date");
 			
 			var tbody = table.append('tbody');
 			
@@ -326,13 +343,36 @@ function editRow(rowId, options, fields){
                   .text(noteInfo.note);
                tr2.append('td').text(noteInfo.added_by);
                tr2.append('td').text(noteInfo.added_date);
-               tr2.append('td').html('<span class="close">&times;</span>')
+               tr2.append('td')
+                  .attr('id','del_'+noteInfo.noteId)
+                  .html('<span class="close">&times;</span>')
                   .on('click', function() {
-                      delete_note(noteInfo.noteId);
+                	  var delNote = Number(d3.select(this.parentNode).attr('id'));
+                      delete_note(delNote);
                       d3.select(this.parentNode).remove();
                   });
    	         } 
 		}
+	}
+	
+	function get_availability(pg_id){
+		$.ajax({
+			url: "/plantgrow/availability/"+pg_id,
+			dataType: "json",
+			contentType: 'application/json; charset=UTF-8',
+			type: 'GET',
+			success: function(data){
+				d3.select('[id="plant_avail"]').text(data.availability);
+			},
+		     error: function(data){
+			        console.log(data.responseText);
+			        //alert(json.error);},
+			    },
+			    failure: function(data){
+			        console.log(data.responseText);
+			        //alert(json.error);
+			        }
+		})
 	}
 	
 	function get_notes(pg_id, process_func){

@@ -68,7 +68,7 @@ class AdminShowPlantWeek(View):
     def dispatch_request(self,plantgrow_id):
         suppliers = Supplier.query()
         customers = Customer.query()
-        products = Product.query()
+        
         
         pg = PlantGrow.get_by_id(int(plantgrow_id))
         #week = Key(GrowWeek,week_id)
@@ -78,7 +78,13 @@ class AdminShowPlantWeek(View):
         #pweeks = pg.get()
         
         plant = pg.plant.get()
+        products = plant.get_products()
         week = pg.finish_week.get()
+        avail = pg.availability()
+        
+        nxt = pg.next
+        prior = pg.prior
+        
             
         pps = ProductPlant.query()
         pps = pps.filter(ProductPlant.plant == plant.key)
@@ -95,6 +101,6 @@ class AdminShowPlantWeek(View):
                 cr_list.append(crw)
             
         return render_template("show_plantweek.html",week=week, plant=plant, pweeks=pg.supplies, plantgrow = plantgrow_id,
-                               creserve=cr_list,suppliers=suppliers, customers=customers,products=products)
+                               creserve=cr_list,suppliers=suppliers, customers=customers,products=products,next=nxt.id, prior=prior.id, availability=avail)
         
         

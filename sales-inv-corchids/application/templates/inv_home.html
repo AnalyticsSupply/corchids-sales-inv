@@ -22,7 +22,7 @@
                 <th>Plant</th>
                 <th>Forecast</th>
                 <th>Reserved</th>
-                <th>Wanted</th>
+                <th>Available</th>
                 <th>Actual</th>
                 <th>&nbsp;</th>
                 <th>&nbsp;</th>
@@ -32,7 +32,9 @@
         <tbody id="summary">
             
         </tbody>
-    </table></div>
+    </table>
+    <p> An asterik *, and plant name in <span class='font-red'>red</span> signifies that there are notes for this plant/week
+    </div>
        </div>
        
     </div>
@@ -46,19 +48,14 @@
 {% endblock footer %}
 
 {% block tail_script %}
-    {% if errors == 1 %}
-        <script>window.onload = function() {
-        	show_modal();
-        };</script>
-    {% endif %}
-    {% if request.args.get('new') == '???' %}
-        <script>window.onload = function() {
-        	show_modal();
-        };</script>
-    {% endif %}
     <script>
         window.onload = function() {
-    	  call_wk_summ(2017,1);
+        	Date.prototype.getWeek = function() {
+                var onejan = new Date(this.getFullYear(), 0, 1);
+                return Math.ceil((((this - onejan) / 86400000) + onejan.getDay() + 1) / 7);
+            }
+        	d = new Date();
+    	  call_wk_summ(d.getFullYear(),d.getWeek());
     	};
         $( function() {
           $( "#datepicker" ).datepicker({
@@ -118,7 +115,7 @@
         	  get_notes(notesId, function(myNotes){
         	     var arrayLength = myNotes.length;
         	     for (var i = 0; i < arrayLength; i++) {
-        	       addRow(notesId, myNotes[i].noteId, myNotes[i]);
+        	       addNoteRow(notesId, myNotes[i].noteId, myNotes[i]);
         	     }
         	     if (arrayLength == 0) {
         	       d3.select(".modal-body").append("h3").attr('class', 'no-note-msg').text("No existing notes");
@@ -192,7 +189,7 @@
               add_date: addDay
             };
             save_note(notesId, noteInfo, function(notesId, noteId, noteInfo){
-            	addRow(notesId,noteId,noteInfo);
+            	addNoteRow(notesId,noteId,noteInfo);
             });
             
           }
@@ -201,7 +198,7 @@
           $("#note-input").val("");
         }
 
-        function addRow(notesId, noteId, noteInfo) {
+        function addNoteRow(notesId, noteId, noteInfo) {
           var tr = d3.select('[id="modal-table"]')
             .select('tbody').append('tr');
           tr.attr('class', 'added-note')
@@ -210,10 +207,11 @@
             .text(noteInfo.note);
           tr.append('td').text(noteInfo.added_by);
           tr.append('td').text(noteInfo.added_date);
-          tr.append('td').html('<span class="close">&times;</span>')
+          tr.append('td').attr('id','del_'+noteInfo.noteId)
+            .html('<span class="close">&times;</span>')
             .on('click', function() {
-              //removeNote(notesId, noteId);
-                 delete_note(noteId);
+            	var delNote = Number(d3.select(this.parentNode).attr('id'));
+                delete_note(delNote);
                  d3.select(this.parentNode).remove();
             });
         }

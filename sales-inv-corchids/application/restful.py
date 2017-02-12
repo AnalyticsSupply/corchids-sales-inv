@@ -75,8 +75,18 @@ def get_week_summary(year, week_num):
     return jsonify(resp)
 
 @login_required
-def update_plant_grow(plant_key, week_key, wanted, actual):
-    return jsonify(PlantGrow.update_plantgrow(plant_key, week_key, wanted, actual))
+def update_plant_grow(plant_key, week_key, actual):
+    return jsonify(PlantGrow.update_plantgrow(plant_key, week_key, actual))
+
+@login_required
+def get_availability(plantgrow_id):
+    try:
+        pg = PlantGrow.get_by_id(plantgrow_id)
+        return pg.availability()
+    except Exception:
+        return traceback.format_exc()
+    
+    return 0
 
 @login_required
 def update_plantweek_entry(inData):

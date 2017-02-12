@@ -7,9 +7,40 @@
 
 {% block content %}
     <div class="row">
-    <div class="col-xs-12 col-md-12"><h2>Week Summary for {{ plant.display_name }}</h2></div>
+    <div class="col-xs-12 col-md-12">
+    <table><tr><td>
+    <form method="get" action="/plantweek/{{ prior }}"><button class="btn btn-primary btn-xs">
+    <span class="glyphicon glyphicon-chevron-left" aria-hidden="true">Prior Week</span></button></form></td><td>
+    <h2>Summary for {{ plant.display_name }} (Week {{ week.week_number }}, {{ week.year }})</h2>
+    </td><td><form method="get" action="/plantweek/{{ next }}"><button class="btn btn-primary btn-xs">
+    <span class="glyphicon glyphicon-chevron-right" aria-hidden="true">Next Week</span></button></form></td></tr>
+    <tr><td>&nbsp;</td><td align="center"><h5>Availability: <span id='plant_avail'> {{ availability }}</span></h5></td><td>&nbsp;</td></tr>
+    </table>
+    <br><br>
+    </div>
     <!--<div id='summary-top' class="col-xs-6 col-md-4"> <img src="/static/img/{{ plant.image_name }}" alt="{{ plant.display_name }}" class="img-thumbnail"> </div>-->
-    <div class="col-xs-12 col-md-12"><h3 id="">GROWING: {{ plant.display_name }}, for week {{ week.week_number }}, {{ week.year }}</h3></div>
+    
+    <div class="col-xs-12 col-md-12"><h3 id="">NOTES: </h3></div>
+    <!-- <div class="col-xs-6 col-md-4">&nbsp;</div>  -->
+    <div class="col-xs-12 col-md-12">
+    <div class="table-responsive">
+    <table id="notes-table" class="table table-sm table-bordered">
+        <thead>
+            <tr>
+                <th>Note</th>
+                <th>Added By</th>
+                <th>Added Date</th>
+            </tr>
+        </thead>
+    </table></div>
+    <p>
+        <a class="btn btn-primary" onclick='showNotes({{ plantgrow }})'>
+            <i class="icon-plus-sign icon-white"></i>
+            Add Note
+        </a>
+    </p></div>
+    
+    <div class="col-xs-12 col-md-12"><h3 id="">GROWING: </h3></div>
     <!-- <div class="col-xs-6 col-md-4">&nbsp;</div>  -->
     <div class="col-xs-12 col-md-12">
     <div class="table-responsive">
@@ -45,8 +76,9 @@
             Add Crop
         </a>
     </p></div>
+    
    <!-- <div class="col-xs-6 col-md-4">&nbsp;</div> -->
-    <div class="col-xs-12 col-md-12"><h3 id="">RESERVED: {{ plant.display_name }}, for week {{ week.week_number }}, {{ week.year }}</h3></div>
+    <div class="col-xs-12 col-md-12"><h3 id="">RESERVED:</h3></div>
    <!--  <div class="col-xs-6 col-md-4">&nbsp;</div> -->
     <div class="col-xs-12 col-md-12">
     <div class="table-responsive">
@@ -88,23 +120,21 @@
 
 {% endblock content %}
 
+{% block footer %}
+    {% include 'notes_modal.html' %} {# pull in notes_modal form (modal dialog) #}
+{% endblock footer %}
+
 {% block tail_script %}
-    {% if errors == 1 %}
-        <script>window.onload = function() {
-        	show_modal();
-        };</script>
-    {% endif %}
-    {% if request.args.get('new') == 'yes' %}
-        <script>window.onload = function() {
-        	show_modal();
-        };</script>
-    {% endif %}
+    
+     
     <script>
        var supp_options = []
        var prod_options = []
        var cust_options = []
        var week_id = {{ week.id }}
        var plant_id = {{ plant.id }}
+       var plantgrow = {{ plantgrow }}
+       
     </script>
     {% for supplier in suppliers %}
         <script> supp_options.push("{{ supplier.name|safe }}:{{ supplier.id }}")</script>
@@ -118,6 +148,7 @@
     <script>
         window.onload = function() {
     	    get_notes({{ plantgrow }},display_notes);
+    	    get_availability({{ plantgrow }});
         };
         sOptions = {supplier:supp_options}
         rOptions = {customer:cust_options, product:prod_options}
@@ -127,9 +158,11 @@
         function add_row(type){
         	if (type == 'plantgrowsupply'){
         		addRow("plantgrowsupply",sOptions, sFields, {plantgrow: {{ plantgrow }} });
+
         	}
         	if (type == 'productreserve'){
         		addRow("productreserve",rOptions, rFields, {finish_week: {{ week.id }} });
+    
         	}
         }
         function edit_row(rowId, model_name){
@@ -144,11 +177,145 @@
         function save_row(rowId, model_name){
         	if (model_name == 'productreserve'){
         		saveRow(rowId,rOptions,rFields, {service_name: 'customer_reserve', week: week_id, plant: plant_id});
+        		get_availability({{ plantgrow }});
         	}
         	if (model_name == 'plantgrowsupply'){
         		saveRow(rowId,sOptions,sFields, {service_name: 'supplier_plants', week: week_id, plant: plant_id});
+        		get_availability({{ plantgrow }});
         	}
         }
+        
+        var modal = document.getElementById('myModal');
+     // Get the button that opens the modal
+        var btn = document.getElementById("myBtn");
+
+        // Get the <span> element that closes the modal
+        var span = document.getElementsByClassName("close")[0];
+        
+        var notes = {
+                notes_1: [{
+                  note: 'This is great',
+                  added_by: 'J-Dawg',
+                  add_date: '01/11/2017'
+                }, {
+                  note: 'Well it is not that great',
+                  added_by: 'Mister T',
+                  add_date: '01/12/2017'
+                }]
+              }
+        
+        function showNotes(notesId) {
+      	  // store the notes id
+      	  console.log("showing for notes: " + notesId)
+      	  d3.select('[id="note_id_storage"]').text(notesId);
+      	  d3.select('[id="note_title"]').text("notes for id: " + notesId);
+      	  // get notes
+      	  //var myNotes = getNotes(notesId);
+      	  get_notes(notesId, function(myNotes){
+      	     var arrayLength = myNotes.length;
+      	     for (var i = 0; i < arrayLength; i++) {
+      	       addNoteRow(notesId, myNotes[i].noteId, myNotes[i]);
+      	     }
+      	     if (arrayLength == 0) {
+      	       d3.select(".modal-body").append("h3").attr('class', 'no-note-msg').text("No existing notes");
+      	     }
+      	     modal.style.display = "block";
+      	  });
+      }
+        span.onclick = function() {
+            d3.select(".no-note-msg").remove();
+            modal.style.display = "none";
+            d3.selectAll('tr.added-note').remove();
+            var table = d3.select('[id="notes-table"]');
+            table.select('tbody').remove();
+            get_notes(plantgrow,display_notes);	
+          }
+
+          function removeNote(notes_id, row_id) {
+            // to be converted to ajax function
+            var noteId = Number(row_id.split("-")[1]);
+            var new_notes = [];
+            var myNotes = getNotes(notes_id);
+            var arrayLength = myNotes.length;
+            for (var i = 0; i < arrayLength; i++) {
+              if (i != noteId) {
+                new_notes.push(myNotes[i]);
+              }
+            }
+            var newLength = new_notes.length;
+            if (newLength == 0) {
+              d3.select(".modal-body").append("h3").attr('class', 'no-note-msg').text("No existing notes");
+            }
+            saveNotes(notes_id, new_notes);
+          }
+
+          function addNote(notes_id, anote) {
+            // to be converted to ajax function
+            var myNotes = getNotes(notes_id);
+            var arrayLength = myNotes.length;
+            myNotes.push(anote);
+            saveNotes(notes_id, myNotes);
+            return arrayLength;
+          }
+
+          function getNotes(notesId) {
+            // to be converted to ajax function
+            var row = "notes_" + notesId;
+            if (notes.hasOwnProperty(row)) {
+              return notes[row];
+            }
+            notes[row] = [];
+            return [];
+          }
+
+          function saveNotes(notesId, argNotes) {
+            var row = "notes_" + notesId;
+            notes[row] = argNotes;
+          }
+
+          var button = document.getElementById('note-add');
+          var formatADate = d3.timeFormat("%m/%d/%Y")
+          button.onclick = function() {
+            d3.select(".no-note-msg").remove();
+            var notesId = d3.select('[id="note_id_storage"]').text();
+            var anote = $("#note-input").val();
+
+            if (anote.length > 0) {
+              var addDay = formatADate(new Date());
+              // add ajax call to add to service
+              var noteInfo = {
+                note: anote,
+                added_by: 'current user',
+                add_date: addDay
+              };
+              save_note(notesId, noteInfo, function(notesId, noteId, noteInfo){
+              	addNoteRow(notesId,noteId,noteInfo);
+              });
+              
+            }
+
+
+            $("#note-input").val("");
+          }
+
+          function addNoteRow(notesId, noteId, noteInfo) {
+            var tr = d3.select('[id="modal-table"]')
+              .select('tbody').append('tr');
+            tr.attr('class', 'added-note')
+              .attr('id', noteId)
+              .append('td')
+              .text(noteInfo.note);
+            tr.append('td').text(noteInfo.added_by);
+            tr.append('td').text(noteInfo.added_date);
+            tr.append('td')
+              .attr('id','del_'+noteId)
+              .html('<span class="close">&times;</span>')
+              .on('click', function() {
+                   var delNote = Number(d3.select(this.parentNode).attr('id'));
+                   delete_note(delNote);
+                   d3.select(this.parentNode).remove();
+              });
+          }
         
         $( function() {
             $( "#week_monday" ).datepicker({
