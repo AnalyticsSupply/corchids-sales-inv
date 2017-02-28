@@ -41,7 +41,7 @@ class AdminListWeeks(View):
             try:
                 week.put()
                 week_id = week.key.id()
-                flash(u'Route %s successfully saved.' % week_id, 'success')
+                flash(u'Week %s successfully saved.' % week_id, 'success')
                 #return redirect(url_for('show_route',week_id=week_id))
                 return redirect(url_for('list_weeks'))
             except CapabilityDisabledError:
@@ -78,7 +78,7 @@ class AdminShowPlantWeek(View):
         #pweeks = pg.get()
         
         plant = pg.plant.get()
-        products = plant.get_products()
+        products = plant.get_products2()
         week = pg.finish_week.get()
         avail = pg.availability()
         

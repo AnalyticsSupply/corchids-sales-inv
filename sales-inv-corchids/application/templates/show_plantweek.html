@@ -145,7 +145,13 @@
     {% for product in products %}
         <script> prod_options.push("{{ product.name|safe }}:{{ product.id }}")</script>
     {% endfor %}
+    
+    
     <script>
+    supp_options = supp_options.sort();
+    cust_options = cust_options.sort();
+    prod_options = prod_options.sort();
+    
         window.onload = function() {
     	    get_notes({{ plantgrow }},display_notes);
     	    get_availability({{ plantgrow }});
