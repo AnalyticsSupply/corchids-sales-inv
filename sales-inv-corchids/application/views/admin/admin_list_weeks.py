@@ -78,7 +78,7 @@ class AdminShowPlantWeek(View):
         #pweeks = pg.get()
         
         plant = pg.plant.get()
-        products = plant.get_products2()
+        products = plant.get_products()
         week = pg.finish_week.get()
         avail = pg.availability()
         

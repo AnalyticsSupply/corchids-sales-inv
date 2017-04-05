@@ -59,20 +59,26 @@ def process_rest_request(path, request,response):
 
 @login_required
 def get_week_summary(year, week_num):
-    day =  str(year)+'-'+str(week_num)+'-1'
-    dt = datetime.strptime(day, '%Y-%W-%w')
-    qry = GrowWeek.query(GrowWeek.week_monday == dt)
-    week = qry.get()
-    resp = {}
-    if week:
-        resp = week.week_summary()
-        dlist = []
-        for plant in resp.keys():
-            d = resp[plant]
-            d['plant'] = plant
-            dlist.append(d)
-        resp = dlist
-    return jsonify(resp)
+    try:
+        day =  str(year)+'-'+str(week_num)+'-1'
+        dt = datetime.strptime(day, '%Y-%W-%w')
+        #qry = GrowWeek.query(GrowWeek.week_monday == dt)
+        week = GrowWeek.create_week(dt)
+        resp = {}
+        if week:
+            resp = week.week_summary()
+            dlist = []
+            for plant in resp.keys():
+                d = resp[plant]
+                d['plant'] = plant
+                dlist.append(d)
+            resp = dlist
+        return jsonify(resp)
+    except:
+        traceback.print_exc(file=sys.stdout)
+        print("Unexpected error:", sys.exc_info()[0])
+        
+        return jsonify({'status':'failed'})
 
 @login_required
 def update_plant_grow(plant_key, week_key, actual):
@@ -83,8 +89,10 @@ def get_availability(plantgrow_id):
     try:
         pg = PlantGrow.get_by_id(plantgrow_id)
         return pg.availability()
-    except Exception:
-        return traceback.format_exc()
+    except:
+        traceback.print_exc(file=sys.stdout)
+        print("Unexpected error:", sys.exc_info()[0])
+
     
     return 0
 

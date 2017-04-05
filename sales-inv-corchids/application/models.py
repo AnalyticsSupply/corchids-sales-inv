@@ -7,11 +7,45 @@ App Engine datastore models
 
 from math import floor
 from google.appengine.ext import ndb
+
 #from google.appengine.ext import db
 from werkzeug.security import generate_password_hash
 
 from datetime import datetime
+from datetime import timedelta
 
+class DBEntry(ndb.Model):
+    conn_name = ndb.StringProperty(required=True)
+    conn_string = ndb.StringProperty(required=True)
+    conn_user = ndb.StringProperty(required=True)
+    conn_pass = ndb.StringProperty(required=True)
+    conn_host = ndb.StringProperty(required=True)
+    conn_port = ndb.StringProperty(required=True)
+    conn_database = ndb.StringProperty(required=True)
+    
+    def set_password(self, password):
+        self.conn_pass = generate_password_hash(password)
+    
+    @classmethod  
+    def get_connection_string(cls,dbtype):
+        dbe = DBEntry.query(DBEntry.conn_name == dbtype).get()
+        if dbe:
+            ##  mysql+mysqldb://<user>:<password>@<host>[:<port>]/<dbname>
+            #return dbe.conn_string+dbe.conn_user+":"+dbe.conn_pass+"@"+dbe.conn_host+":"+dbe.conn_port+"/"+dbe.conn_database
+            dburl = dbe.conn_string+dbe.conn_user+":{}"+"@"+dbe.conn_host+dbe.conn_port+"/"+dbe.conn_database
+            print(dburl)
+            return dburl.format(dbe.conn_pass)
+        else:
+            db = DBEntry()
+            db.conn_database = "x"
+            db.conn_host = "x"
+            db.conn_name = dbtype
+            db.conn_pass = "x"
+            db.conn_port = "x"
+            db.conn_string = "x"
+            db.conn_user = "x"
+            db.put()
+            return db
 
 class NDBBase(ndb.Model):
     added_by = ndb.UserProperty(auto_current_user_add=True)
@@ -55,6 +89,7 @@ class NDBBase(ndb.Model):
     def update_resp(self):
         resp = {'status':'success','msg':'Updated Successfully'}
         try:
+            self.up_timestamp = datetime.now()
             key = self.put()
             resp['key'] = key.id()
         except Exception as e:
@@ -68,6 +103,11 @@ class NDBBase(ndb.Model):
         except Exception as e:
             resp = {'status':'failed','msg': str(e)}
         return resp
+    
+    @classmethod
+    def get_lastupdated(cls, upd_date):
+        qry = cls.query(ndb.OR(cls.timestamp >= upd_date, cls.up_timestamp >= upd_date))
+        return qry.fetch()
 
 class User:
     pw_hash = None
@@ -83,7 +123,23 @@ class User:
     def get_model(self):
         return UserModel(username=self.username, pw_hash=self.pw_hash)
     
+class LastUpdate(NDBBase):
+    name = ndb.StringProperty(required=True)
+    last_updated = ndb.DateTimeProperty()
     
+    @classmethod
+    def get_last_update(cls, update_name):
+        lstUp = LastUpdate.query(LastUpdate.name == update_name).get()
+        if not lstUp:
+            lstUp = LastUpdate()
+            lstUp.name = update_name
+            lstUp.last_updated = datetime.strptime('1/1/2015','%m/%d/%Y')
+            lstUp.put()
+        return lstUp
+    
+    def update(self):
+        self.last_updated = datetime.now()
+        self.put()    
 
 class UserModel(NDBBase):
     username = ndb.StringProperty(required=True)
@@ -93,7 +149,45 @@ class Plant(NDBBase):
     """ Plants for which we have forecasted values"""
     name = ndb.StringProperty(required=True)
     display_name = ndb.StringProperty(required=True)
-    image_name = ndb.StringProperty(required=True)    
+    image_name = ndb.StringProperty(required=True)   
+    inactive = ndb.BooleanProperty(default=False)
+    
+    @classmethod
+    def get_active(cls):
+        plants = Plant.query().fetch()
+        pls = []
+        for plant in plants:
+            if not plant.inactive:
+                pls.append(plant)
+        return pls
+    
+    @classmethod
+    def dev_get_create(cls):
+        plants = Plant.query(Plant.name == 'Test Plant').get()
+        
+        if not plants:
+            plant = Plant()
+            plant.name = 'Test Plant'
+            plant.display_name = 'Test Plant'
+            plant.image_name = 'test_plant.jpg'
+            plant.inactive = False
+            plant.put()
+            
+            product = Product()
+            product.name = 'Test Product'
+            product.sale_price = 1.0
+            product.image = 'test_product.jpg'
+            product.qty_per_case = 1
+            product.box_height = "1"
+            product.box_width = "1"
+            product.box_length = "1"
+            product.put()
+            
+            pp = ProductPlant()
+            pp.plant = plant.key
+            pp.product = product.key
+            pp.qty = 1
+            pp.put()
     
     @property
     def plantgrow(self):
@@ -110,7 +204,6 @@ class Plant(NDBBase):
             prds.append(p.product.get())
             
         return prds
-    
     
  #   @property
  #   def concept_plants(self):
@@ -135,27 +228,13 @@ class GrowWeek(NDBBase):
     
     @property
     def next_week(self):
-        nxtWk = self.week_number + 1
-        nxtYr = self.year
-        
-        if nxtWk > 52:
-            nxtWk = 1
-            nxtYr = self.year+1
-        
-        qry = GrowWeek.query(GrowWeek.week_number == nxtWk).filter(GrowWeek.year==nxtYr)
-        return qry.get() 
+        nxtWk = self.week_monday + timedelta(days=7)
+        return GrowWeek.create_week(nxtWk)       
     
     @property
     def prior_week(self):
-        nxtWk = self.week_number - 1
-        nxtYr = self.year
-        
-        if nxtWk == 0:
-            nxtWk = 52
-            nxtYr = self.year-1
-        
-        qry = GrowWeek.query(GrowWeek.week_number == nxtWk).filter(GrowWeek.year==nxtYr)
-        return qry.get()
+        nxtWk = self.week_monday - timedelta(days=7)
+        return GrowWeek.create_week(nxtWk)
    
     @property
     def plantgrow(self):
@@ -165,6 +244,27 @@ class GrowWeek(NDBBase):
     def reserves(self):
         return ProductReserve.query(ProductReserve.finish_week == self.key)
     
+    
+    @classmethod
+    def create_weeks(cls, start_date, end_date):
+        while start_date <= end_date:
+            GrowWeek.create_week(start_date)
+            start_date = start_date + timedelta(days=1)
+    
+    @classmethod
+    def create_week(cls, indate):
+        wknum = indate.isocalendar()[1]
+        year = indate.year
+        gw = GrowWeek.query(ndb.AND(GrowWeek.week_number == wknum, GrowWeek.year == year)).get()
+        if not gw:
+            gw = GrowWeek()
+            gw.week_number = wknum
+            gw.year = year
+            gw.week_monday = indate - timedelta(days=indate.weekday())
+            gw.put()
+        return gw
+        
+    
     def chk_create(self, din, name, plant):
         if name not in din.keys():
             din[name] = {'wanted':0,'actual':0,'forecast':0, 'reserved':0, 'notes':0}
@@ -172,7 +272,11 @@ class GrowWeek(NDBBase):
             din[name]['week_key'] = self.id
     
     def week_summary(self):
-        pgs = self.plantgrow
+        #pgs = self.plantgrow
+        pgs = []
+        plants = Plant.get_active()
+        for plant in plants:
+            pgs.append(PlantGrow.get_or_create(plant.key, self.key))
         rsvs = self.reserves
         
         pgd = {}
@@ -211,6 +315,14 @@ class Supplier(NDBBase):
     @property
     def plantgrow(self):
         return PlantGrow.query(PlantGrow.supplier == self.key)
+    
+    @classmethod
+    def dev_get_create(cls):
+        suppliers = Supplier.query().fetch()
+        if not suppliers:
+            s = Supplier()
+            s.name = 'Test Supplier'
+            s.put()
 
 class PlantGrow(NDBBase):
     """ This is the class represents all plants that are available during a specific week """
@@ -221,13 +333,15 @@ class PlantGrow(NDBBase):
     
     @property
     def next(self):
-        qry = PlantGrow.query(PlantGrow.plant == self.plant).filter(PlantGrow.finish_week == self.finish_week.get().next_week.key)
-        return qry.get()
+        return PlantGrow.get_or_create(self.plant, self.finish_week.get().next_week.key)
+        #qry = PlantGrow.query(PlantGrow.plant == self.plant).filter(PlantGrow.finish_week == self.finish_week.get().next_week.key)
+        #return qry.get()
     
     @property
     def prior(self):
-        qry = PlantGrow.query(PlantGrow.plant == self.plant).filter(PlantGrow.finish_week == self.finish_week.get().prior_week.key)
-        return qry.get()
+        return PlantGrow.get_or_create(self.plant, self.finish_week.get().prior_week.key)
+        #qry = PlantGrow.query(PlantGrow.plant == self.plant).filter(PlantGrow.finish_week == self.finish_week.get().prior_week.key)
+        #return qry.get()
     
     @property
     def supplies(self):
@@ -253,6 +367,39 @@ class PlantGrow(NDBBase):
         
         return resv
     
+    @classmethod
+    def get_or_create(cls,pk, wk):
+        #ndb.Key(Plant,argPlant)
+        #pk = ndb.Key(Plant,int(plant_key))
+        #wk = ndb.Key(GrowWeek,int(week_key))
+        pg = PlantGrow.query(ndb.AND(PlantGrow.plant == pk,PlantGrow.finish_week == wk)).get()
+        if not pg:
+            pg = PlantGrow()
+            pg.plant = pk
+            pg.finish_week = wk
+            pg.actual = 0
+            pg.want_qty = 0
+            pg.put()
+        return pg
+    
+    def pg_summary(self):
+        ps = {}
+        plant = self.plant.get()
+        ps['_id'] = self.id
+        ps['plant'] = plant.name
+        ps['plant_id'] = plant.id
+        ps['week_id'] = self.finish_week.get().id
+        ps['actual'] = self.actual
+        ps['forecast'] = self.forecasts
+        ps['num_reserved'] = self.reserves
+        return ps
+        
+    @classmethod
+    def plant_summary(cls, week_id, plant_id):
+        pg = PlantGrow.query(ndb.AND(PlantGrow.plant == ndb.Key(Plant,plant_id),PlantGrow.finish_week == ndb.Key(GrowWeek, week_id))).get()
+        ps = pg.pg_summary()
+        return ps
+        
     
     def availability(self):
         rsvs = self.reserves
@@ -276,6 +423,7 @@ class PlantGrow(NDBBase):
             if pg:
                 #pg.want_qty = int(wanted)
                 pg.actual = int(actual)
+                pg.up_timestamp = datetime.now()
                 pg.put()
             else:
                 resp = {'status':'failed','msg':'No record found to update'}
@@ -328,6 +476,24 @@ class PlantGrowSupply(NDBBase):
         pgs.confirmation_num = str(argConfirmation)
         pgs.cost = int(argCost)
         return pgs.update_resp()
+    
+    @classmethod
+    def get_supply(cls,supp_id):
+        pgs = PlantGrowSupply.get_by_id(supp_id)
+        pgsdb = {}
+        pgsdb['_id'] = supp_id
+        supplier = pgs.supplier.get()
+        pgsdb['supplier'] = supplier.name
+        pgsdb['supplier_id'] = supplier.id
+        pgsdb['forecast'] = pgs.forecast
+        pg = pgs.plantgrow.get()
+        week = pg.finish_week.get()
+        pgsdb['week_id'] = week.id
+        pgsdb['add_date'] = pgs.timestamp
+        plant = pg.plant.get()
+        pgsdb['plant'] = plant.name
+        pgsdb['plant_id'] = plant.id
+        return pgsdb
          
 class Concept(NDBBase):
     """ many plants can be combined to create 1 concept """
@@ -473,8 +639,7 @@ class CurrentDeal(NDBBase):
         for cd in qry:
             resp.append(cd.get_current_deal())
                 
-        return resp
-            
+        return resp          
     
 class CurrentDealWeeks(NDBBase):
     current_deal = ndb.KeyProperty(kind=CurrentDeal,required=True)
@@ -492,6 +657,28 @@ class ProductReserve(NDBBase):
     product = ndb.KeyProperty(kind=Product)
     num_reserved = ndb.IntegerProperty(default=0)
     shipped = ndb.BooleanProperty()    
+    
+    @classmethod
+    def get_db_reserve(cls, res_id):
+        pr = ProductReserve.get_by_id(res_id)
+        prdb = {}
+        prdb['_id'] = pr.id
+        prpl = ProductPlant.query(ProductPlant.product == pr.product).get()
+        plant = prpl.plant.get()
+        prdb['plant'] = plant.name
+        product = prpl.product.get()
+        prdb['product'] = product.name
+        prdb['plant_id'] = plant.id
+        prdb['product_id'] = product.id
+        prdb['num_reserved'] = pr.num_reserved
+        week = pr.finish_week.get()
+        prdb['week_id'] = week.id
+        customer = pr.customer.get()
+        prdb['customer'] = customer.customer_name
+        prdb['customer_id'] = customer.id
+        prdb['sales_rep'] = pr.added_by
+        prdb['add_date'] = pr.timestamp
+        return prdb
     
     @classmethod
     def update(cls,argId, argCustomer, argWeek, argProduct, argReserved=0, argShipped=False):
@@ -514,23 +701,3 @@ class ProductReserveWrap():
     def incr_plant(self, num):
         self.plant_reserve = self.plant_reserve + num
     
-
-class RouteEntryMain(NDBBase):
-    added_by = ndb.UserProperty()
-    timestamp = ndb.DateTimeProperty(auto_now_add=True)
-    up_timestamp = ndb.DateTimeProperty(auto_now_add=True)
-    
-class RouteStops(NDBBase):
-    """ Route Stop """
-    stop_name = ndb.StringProperty(required=True)
-    stop_ship_to = ndb.StringProperty(required=True)
-    stop_zip = ndb.StringProperty(required=True)
-    stop_dist = ndb.IntegerProperty(required=True)
-    stop_load = ndb.IntegerProperty(required=True)
-    stop_pallets = ndb.IntegerProperty()
-    stop_ret_carts = ndb.IntegerProperty()
-    stop_carts = ndb.IntegerProperty()
-    
-    #route = ndb.KeyProperty(kind=RouteEntryMain)
-    timestamp = ndb.DateTimeProperty(auto_now_add=True)
-    up_timestamp = ndb.DateTimeProperty(auto_now_add=True)

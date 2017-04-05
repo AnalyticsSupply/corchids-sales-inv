@@ -3,12 +3,20 @@ Initialize Flask app
 
 """
 from flask import Flask, jsonify, request, make_response
-import os
+import os, sys
 import traceback
 from flask_debugtoolbar import DebugToolbarExtension
 from werkzeug.debug import DebuggedApplication
+from flask_sqlalchemy import SQLAlchemy
+from models import DBEntry, Plant, Supplier
+
 
 app = Flask('application')
+
+app.config['SQLALCHEMY_DATABASE_URI'] = DBEntry.get_connection_string('Datawarehouse')
+db = SQLAlchemy(app)
+
+import database
 
 if os.getenv('FLASK_CONF') == 'TEST':
     app.config.from_object('application.settings.Testing')
@@ -32,6 +40,9 @@ elif 'SERVER_SOFTWARE' in os.environ and os.environ['SERVER_SOFTWARE'].startswit
     def inject_profiler():
         return dict(profiler_includes=templatetags.profiler_includes())
     app.wsgi_app = profiler.ProfilerWSGIMiddleware(app.wsgi_app)
+    
+    Plant.dev_get_create()
+    Supplier.dev_get_create()
 else:
     app.config.from_object('application.settings.Production')
 
@@ -69,8 +80,14 @@ def get_summary(year, week_num):
 
 @app.route('/plantgrow/availability/<int:plantgrow>', methods=['GET'])
 def get_availability(plantgrow):
-    avail = restful.get_availability(plantgrow)
-    return jsonify({'availability': avail})
+    try:
+        avail = restful.get_availability(plantgrow)
+        return jsonify({'availability': avail})
+    except:
+        traceback.print_exc(file=sys.stdout)
+        print("Unexpected error:", sys.exc_info()[0])
+    
+    return jsonify({'availability':0})
 
 @app.route('/plantgrow/update/',methods=['GET','POST'])
 def upd_plantgrow():
@@ -97,6 +114,59 @@ def update_customer_reserve():
         return restful.update_plantweek_entry(uJson)
     except Exception:
         return traceback.format_exc()
+    
+@app.route('/dw_week',methods=['GET'])
+def sync_weeks():
+    try:
+        database.get_date()
+        return jsonify({"status":"success"})
+    except:
+        traceback.print_exc(file=sys.stdout)
+        print("Unexpected error:", sys.exc_info()[0])
+        return jsonify({"status":"failed"})
+    
+@app.route('/dw_supplies',methods=['GET'])
+def sync_supplies():
+    try:
+        database.get_supply()
+        return jsonify({"status":"success"})
+    except:
+        traceback.print_exc(file=sys.stdout)
+        print("Unexpected error:", sys.exc_info()[0])
+        return jsonify({"status":"failed"})
+    
+@app.route('/dw_reserves',methods=['GET'])
+def sync_reserves():
+    try:
+        database.get_reserves()
+        return jsonify({"status":"success"})
+    except:
+        traceback.print_exc(file=sys.stdout)
+        print("Unexpected error:", sys.exc_info()[0])
+        return jsonify({"status":"failed"})
+
+@app.route('/dw_summary',methods=['GET'])
+def sync_summary():
+    try:
+        database.get_summary()
+        return jsonify({"status":"success"})
+    except:
+        traceback.print_exc(file=sys.stdout)
+        print("Unexpected error:", sys.exc_info()[0])
+        return jsonify({"status":"failed"})
+    
+@app.route('/dwsync',methods=['GET'])
+def sync_db():
+    try:
+        database.get_date()
+        database.get_supply()
+        database.get_reserves()
+        database.get_summary()
+        return jsonify({"status":"success"})
+    except:
+        traceback.print_exc(file=sys.stdout)
+        print("Unexpected error:", sys.exc_info()[0])
+        return jsonify({"status":"failed"})
 
 if __name__ == "__main__":
     app.run()
