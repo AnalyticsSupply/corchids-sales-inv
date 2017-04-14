@@ -7,51 +7,19 @@ App Engine datastore models
 
 from math import floor
 from google.appengine.ext import ndb
-
-#from google.appengine.ext import db
-from werkzeug.security import generate_password_hash
+from google.appengine.api import mail
+from google.appengine.api import users
+from google.appengine.api import app_identity   
 
 from datetime import datetime
 from datetime import timedelta
-
-class DBEntry(ndb.Model):
-    conn_name = ndb.StringProperty(required=True)
-    conn_string = ndb.StringProperty(required=True)
-    conn_user = ndb.StringProperty(required=True)
-    conn_pass = ndb.StringProperty(required=True)
-    conn_host = ndb.StringProperty(required=True)
-    conn_port = ndb.StringProperty(required=True)
-    conn_database = ndb.StringProperty(required=True)
-    
-    def set_password(self, password):
-        self.conn_pass = generate_password_hash(password)
-    
-    @classmethod  
-    def get_connection_string(cls,dbtype):
-        dbe = DBEntry.query(DBEntry.conn_name == dbtype).get()
-        if dbe:
-            ##  mysql+mysqldb://<user>:<password>@<host>[:<port>]/<dbname>
-            #return dbe.conn_string+dbe.conn_user+":"+dbe.conn_pass+"@"+dbe.conn_host+":"+dbe.conn_port+"/"+dbe.conn_database
-            dburl = dbe.conn_string+dbe.conn_user+":{}"+"@"+dbe.conn_host+dbe.conn_port+"/"+dbe.conn_database
-            print(dburl)
-            return dburl.format(dbe.conn_pass)
-        else:
-            db = DBEntry()
-            db.conn_database = "x"
-            db.conn_host = "x"
-            db.conn_name = dbtype
-            db.conn_pass = "x"
-            db.conn_port = "x"
-            db.conn_string = "x"
-            db.conn_user = "x"
-            db.put()
-            return db
 
 class NDBBase(ndb.Model):
     added_by = ndb.UserProperty(auto_current_user_add=True)
     updated_by = ndb.UserProperty(auto_current_user=True)
     timestamp = ndb.DateTimeProperty(auto_now_add=True)
-    up_timestamp = ndb.DateTimeProperty(auto_now=True)
+    up_timestamp = ndb.DateTimeProperty(auto_now_add=True)
+    dw_sync_status = ndb.StringProperty(default='updated')
     
     @property
     def id(self):
@@ -89,12 +57,16 @@ class NDBBase(ndb.Model):
     def update_resp(self):
         resp = {'status':'success','msg':'Updated Successfully'}
         try:
-            self.up_timestamp = datetime.now()
-            key = self.put()
+            key = self.update_ndb()
             resp['key'] = key.id()
         except Exception as e:
             resp = {'status':'failed','msg': str(e)}
         return resp
+    
+    def update_ndb(self):
+        self.up_timestamp = datetime.now()
+        self.dw_sync_status = 'to_update'
+        return self.put()
     
     def delete_resp(self):
         resp = {'status':'success','msg':'Deleted Successfully'}
@@ -104,24 +76,30 @@ class NDBBase(ndb.Model):
             resp = {'status':'failed','msg': str(e)}
         return resp
     
+    def reset_dw_sync(self):
+        self.dw_sync_status = 'updated'
+        self.put()
+        
+    def set_dw_sync(self):
+        self.dw_sync_status = 'to_update'
+        self.put()
+    
     @classmethod
     def get_lastupdated(cls, upd_date):
         qry = cls.query(ndb.OR(cls.timestamp >= upd_date, cls.up_timestamp >= upd_date))
         return qry.fetch()
-
-class User:
-    pw_hash = None
-    username = None
     
-    def __init__(self, user, pw):
-        self.username = user
-        self.set_password(pw)
-
-    def set_password(self, password):
-        self.pw_hash = generate_password_hash(password)
-
-    def get_model(self):
-        return UserModel(username=self.username, pw_hash=self.pw_hash)
+    @classmethod
+    def set_for_update(cls, upd_date):
+        qry = cls.query(cls.up_timestamp >= upd_date)
+        for instance in qry:
+            instance.set_dw_sync()
+            
+    @classmethod
+    def get_for_update(cls):
+        qry = cls.query(cls.dw_sync_status == 'to_update')
+        return qry.fetch()
+    
     
 class LastUpdate(NDBBase):
     name = ndb.StringProperty(required=True)
@@ -140,10 +118,6 @@ class LastUpdate(NDBBase):
     def update(self):
         self.last_updated = datetime.now()
         self.put()    
-
-class UserModel(NDBBase):
-    username = ndb.StringProperty(required=True)
-    pw_hash = ndb.StringProperty(required=True)
 
 class Plant(NDBBase):
     """ Plants for which we have forecasted values"""
@@ -352,7 +326,7 @@ class PlantGrow(NDBBase):
         supps = self.supplies
         fcast = 0
         for supp in supps:
-            fcast = fcast + supp.forecast
+            fcast = fcast + 0 if not supp.forecast else supp.forecast
         return fcast
     
     @property
@@ -395,8 +369,14 @@ class PlantGrow(NDBBase):
         return ps
         
     @classmethod
+    def get_plant_wp(cls,week_id, plant_id):
+        return PlantGrow.query(ndb.AND(PlantGrow.plant == ndb.Key(Plant,plant_id),PlantGrow.finish_week == ndb.Key(GrowWeek, week_id))).get()
+        
+    @classmethod
     def plant_summary(cls, week_id, plant_id):
-        pg = PlantGrow.query(ndb.AND(PlantGrow.plant == ndb.Key(Plant,plant_id),PlantGrow.finish_week == ndb.Key(GrowWeek, week_id))).get()
+        pg = PlantGrow.get_plant_wp(week_id, plant_id)
+        if not pg:
+            return None
         ps = pg.pg_summary()
         return ps
         
@@ -422,15 +402,47 @@ class PlantGrow(NDBBase):
             pg = PlantGrow.get_plantgrow(plant_key, week_key)
             if pg:
                 #pg.want_qty = int(wanted)
+                if pg.actual > 0:
+                    pl = pg.plant.get()
+                    wk = pg.finish_week.get()
+                    msg = "The plant: {} for week {} ({}), had the actual number updated from {} to {}".format(pl.name, wk.week_number, wk.year, pg.actual, actual)
+                    EmailNotifications.send_email("actual_update", "Actual Has Been Updated", msg)
                 pg.actual = int(actual)
-                pg.up_timestamp = datetime.now()
-                pg.put()
+                pg.update_ndb()
             else:
                 resp = {'status':'failed','msg':'No record found to update'}
         except Exception as e:
             resp = {'status':'failed','msg': str(e)}
         return resp
+
+class EmailNotifications(NDBBase):
+    email_type = ndb.StringProperty(required=True)
+    active = ndb.BooleanProperty(default=True)
+    sender = ndb.StringProperty(required=True)
+    receive = ndb.StringProperty(repeated=True)
     
+    @classmethod
+    def send_test_email(cls):
+        test_email = EmailNotifications.query(EmailNotifications.email_type == "test").get()
+        if not test_email:
+            test_email = EmailNotifications()
+            test_email.email_type = "test"
+            test_email.active = True
+            test_email.sender = 'Annalytics Supply Support <{}@appspot.gserviceaccount.com>'.format(app_identity.get_application_id())
+            test_email.receive = ["Test User <{}>".format(users.get_current_user().email())]
+            test_email.put()
+        
+        EmailNotifications.send_email("test", "Testing the Email Feature", "This is just a test")
+            
+    
+    @classmethod
+    def send_email(cls, email_type, email_subject, message):
+        en = EmailNotifications.query(EmailNotifications.email_type == email_type).get()
+        if en and en.active:
+            for rec in en.receive:
+                mail.send_mail(sender=en.sender,to=rec,subject=email_subject,body=message)
+        
+  
 class PlantGrowNotes(NDBBase):
     note = ndb.StringProperty(required=True)
     plant_grow = ndb.KeyProperty(kind=PlantGrow)
@@ -549,7 +561,7 @@ class Product(NDBBase):
         pr_qry = ProductReserve.query(ProductReserve.product == self.key).filter(ProductReserve.finish_week == finish_week)
         
         for pr in pr_qry:
-            num_reserved = num_reserved + pr.num_reserved
+            num_reserved = num_reserved + 0 if not pr.num_reserved else pr.num_reserved
             
         return num_reserved
     

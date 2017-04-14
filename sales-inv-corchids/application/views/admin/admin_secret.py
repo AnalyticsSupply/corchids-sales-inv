@@ -4,11 +4,11 @@ from flask.views import View
 
 from flask import flash, redirect, url_for, render_template, request
 
-from decorators import admin_required
+from application.decorators import admin_required
 
-from forms import RestUserAdd
+from application.forms import RestUserAdd
 
-from models import User
+from application.standard_models import User
 
 
 class AdminSecret(View):

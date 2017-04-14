@@ -9,30 +9,40 @@ from datetime import timedelta
 from application import db
 from application.models import ProductReserve, GrowWeek, PlantGrowSupply, PlantGrow,LastUpdate
 
-def get_reserves():
+def set_reserves():
     lstup = LastUpdate.get_last_update("PlantReserves")
-    prs = ProductReserve.get_lastupdated(lstup.last_updated)
+    ProductReserve.set_for_update(lstup.last_updated)
+    lstup.update()
+
+def get_reserves(update=True):
+    #lstup = LastUpdate.get_last_update("PlantReserves")
+    #prs = ProductReserve.get_lastupdated(lstup.last_updated)
+    prs = ProductReserve.get_for_update()
     summ_d = []
+    print("Processing {} reserves".format(len(prs)))
     for pr in prs:
         presv = ProductReserve.get_db_reserve(pr.id)
         summ_d.append({'week_id':presv['week_id'],'plant_id':presv['plant_id']})
-        add_reserves(presv)
+        add_reserves(presv,update=update)
+        pr.reset_dw_sync()
     
     for summ in summ_d:
-        getadd_summary(summ['week_id'], summ['plant_id'])
-        
-    lstup.update()
+        #getadd_summary(summ['week_id'], summ['plant_id'])
+        PlantGrow.get_plant_wp(summ['week_id'], summ['plant_id']).set_dw_sync()
+    
     return 0
 
-def add_reserves(presv):
+def add_reserves(presv,update=True):
     instance = db.session.query(PlantReserves).filter_by(id=presv['_id']).first()
     if instance:
         del presv['_id']
-        instance.update(**presv)
+        if update:
+            instance.update(**presv)
+            db.session.commit()
     else:
         instance = PlantReserves(**presv)
         db.session.add(instance)
-    db.session.commit()
+        db.session.commit()
     
 
 class PlantReserves(db.Model):
@@ -49,17 +59,17 @@ class PlantReserves(db.Model):
     sales_rep = db.Column(db.String(150))
     add_date = db.Column(db.String(150))
     
-    def udate(self, plant, product, plant_id, product_id, num_reserved, week_id, customer, customer_id, sales_rep, add_date):
+    def update(self, plant, product, plant_id, product_id, num_reserved, week_id, customer, customer_id, sales_rep, add_date):
         self.plant=plant
         self.product=product
         self.plant_id=plant_id
         self.product_id=product_id
-        self.num_reserved=num_reserved
+        self.num_reserved=0 if not num_reserved else num_reserved
         self.week_id=week_id
         self.customer=customer
         self.customer_id=customer_id
         self.sales_rep=sales_rep
-        self.add_date=add_date
+        self.add_date=add_date.date()
         
     def __init__(self, _id, plant, product, plant_id, product_id, num_reserved, week_id, customer, customer_id, sales_rep, add_date):
         self.id = _id
@@ -67,12 +77,12 @@ class PlantReserves(db.Model):
         self.product=product
         self.plant_id=plant_id
         self.product_id=product_id
-        self.num_reserved=num_reserved
+        self.num_reserved=0 if not num_reserved else num_reserved
         self.week_id=week_id
         self.customer=customer
         self.customer_id=customer_id
         self.sales_rep=sales_rep
-        self.add_date=add_date
+        self.add_date=add_date.date()
 
 def set_next_2yrs():
     dt = datetime.now()
@@ -106,33 +116,43 @@ class DateWeek(db.Model):
     
     def __init__(self, _id, date_entry, week_id):
         self.id = _id
-        self.date_entry = date_entry
+        self.date_entry = date_entry.date()
         self.week_id = week_id
 
-def get_supply():
+def set_supply():
     lstup = LastUpdate.get_last_update("PlantSupplies")
+    PlantGrowSupply.set_for_update(lstup.last_updated)
+    lstup.update()
+
+def get_supply(update=True):
+    #lstup = LastUpdate.get_last_update("PlantSupplies")
     summ_d = []
-    pgss = PlantGrowSupply.get_lastupdated(lstup.last_updated)
+    #pgss = PlantGrowSupply.get_lastupdated(lstup.last_updated)
+    pgss = PlantGrowSupply.get_for_update()
+    print("Processing {} supplies".format(len(pgss)))
     for pgs in pgss:
         pgsdb = PlantGrowSupply.get_supply(pgs.id)
         summ_d.append({'week_id':pgsdb['week_id'],'plant_id':pgsdb['plant_id']})
-        add_supply(pgsdb)
+        add_supply(pgsdb,update=update)
+        pgs.reset_dw_sync()
     
     for summ in summ_d:
-        getadd_summary(summ['week_id'], summ['plant_id'])
+        #getadd_summary(summ['week_id'], summ['plant_id'])
+        PlantGrow.get_plant_wp(summ['week_id'], summ['plant_id']).set_dw_sync()
     
-    lstup.update()
     return 0
 
-def add_supply(pgsdb):
+def add_supply(pgsdb,update=True):
     instance = db.session.query(PlantSupplies).filter_by(id=pgsdb['_id']).first()
     if instance:
         del pgsdb['_id']
-        instance.update(**pgsdb)
+        if update:
+            instance.update(**pgsdb)
+            db.session.commit()
     else:
         instance = PlantSupplies(**pgsdb)
         db.session.add(instance)
-    db.session.commit()
+        db.session.commit()
     
 class PlantSupplies(db.Model):
     __tablename__ = 'plant_supplies'
@@ -148,9 +168,9 @@ class PlantSupplies(db.Model):
     def update(self,supplier, supplier_id, forecast, week_id, add_date, plant, plant_id):
         self.supplier=supplier
         self.supplier_id=supplier_id
-        self.forecast=forecast
+        self.forecast=0 if not forecast else forecast
         self.week_id=week_id
-        self.add_date=add_date
+        self.add_date=add_date.date()
         self.plant=plant
         self.plant_id=plant_id
         
@@ -158,33 +178,45 @@ class PlantSupplies(db.Model):
         self.id = _id
         self.supplier=supplier
         self.supplier_id=supplier_id
-        self.forecast=forecast
+        self.forecast=0 if not forecast else forecast
         self.week_id=week_id
-        self.add_date=add_date
+        self.add_date=add_date.date()
         self.plant=plant
         self.plant_id=plant_id
 
-def get_summary():
+def set_summary():
     lstup = LastUpdate.get_last_update("PlantSummary")
-    pgs = PlantGrow.get_lastupdated(lstup.last_updated)
-    for pg in pgs:
-        add_summary(pg.pg_summary())
+    PlantGrow.set_for_update(lstup.last_updated)
     lstup.update()
+    
+
+def get_summary(update=True):
+    #lstup = LastUpdate.get_last_update("PlantSummary")
+    pgs = PlantGrow.get_for_update()
+    print("Processing {} summaries".format(len(pgs)))
+    for pg in pgs:
+        if pg:
+            add_summary(pg.pg_summary(),update=update)
+            pg.reset_dw_sync()
+    #lstup.update()
     return 0
 
 def getadd_summary(week_id, plant_id):
     pg = PlantGrow.plant_summary(week_id, plant_id)
-    add_summary(pg)
+    if pg:
+        add_summary(pg)
         
-def add_summary(pg):
+def add_summary(pg,update=True):
     instance = db.session.query(PlantSummary).filter_by(id=pg['_id']).first()
     if instance:
         del pg['_id']
-        instance.update(**pg)
+        if update:
+            instance.update(**pg)
+            db.session.commit()
     else:
         instance = PlantSummary(**pg)
         db.session.add(instance)
-    db.session.commit()
+        db.session.commit()
     
 class PlantSummary(db.Model):
     __tablename__ = 'plant_summary'
@@ -200,25 +232,32 @@ class PlantSummary(db.Model):
         self.plant=plant
         self.plant_id=plant_id
         self.week_id=week_id
-        self.num_reserved=num_reserved
-        self.forecast=forecast
-        self.actual=actual
+        self.num_reserved=0 if not num_reserved else num_reserved
+        self.forecast=0 if not forecast else forecast
+        self.actual=0 if not actual else actual
         
     def __init__(self, _id, plant, plant_id, week_id, num_reserved, forecast, actual):
         self.id=_id
         self.plant=plant
         self.plant_id=plant_id
         self.week_id=week_id
-        self.num_reserved=num_reserved
-        self.forecast=forecast
-        self.actual=actual
+        self.num_reserved=0 if not num_reserved else num_reserved
+        self.forecast=0 if not forecast else forecast
+        self.actual=0 if not actual else actual
+
+def set_date():
+    lstup = LastUpdate.get_last_update("Weeks")
+    GrowWeek.set_for_update(lstup.last_updated)
+    lstup.update()
 
 def get_date():
-    lstUp = LastUpdate.get_last_update('Weeks')
-    wks = GrowWeek.get_lastupdated(lstUp.last_updated)
+    #lstUp = LastUpdate.get_last_update('Weeks')
+    #wks = GrowWeek.get_lastupdated(lstUp.last_updated)
+    wks = GrowWeek.get_for_update()
     for wk in wks:
         add_week(wk)
-    lstUp.update()
+        wk.reset_dw_sync()
+    
     return 0
 
 def add_week(gw):

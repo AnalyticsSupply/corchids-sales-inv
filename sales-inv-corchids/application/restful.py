@@ -6,7 +6,7 @@ Created on Dec 17, 2016
 THis is just my way of making the REST stuff work
 '''
 from application.models import Plant,Customer,GrowWeek,Supplier, Concept,PlantGrow,Product,ProductConcept,\
-    ProductReserve,ProductPlant,PlantGrowSupply, PlantGrowNotes
+    ProductReserve,ProductPlant,PlantGrowSupply, PlantGrowNotes, EmailNotifications
 
 from application.views.admin import authen
 from datetime import datetime
@@ -15,7 +15,7 @@ from flask import make_response,jsonify
 
 from exceptions import AttributeError
 import sys, traceback
-from application.decorators import login_required
+from application.decorators import login_required, admin_required
 
 Dispatcher.base_url = "/rest"
 Dispatcher.add_models({"plant": Plant,'productplant':ProductPlant,
@@ -83,6 +83,11 @@ def get_week_summary(year, week_num):
 @login_required
 def update_plant_grow(plant_key, week_key, actual):
     return jsonify(PlantGrow.update_plantgrow(plant_key, week_key, actual))
+
+@admin_required
+def send_test_email():
+    EmailNotifications.send_test_email()
+    return jsonify({"Status":"Success"})
 
 @login_required
 def get_availability(plantgrow_id):

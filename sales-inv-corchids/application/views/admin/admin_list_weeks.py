@@ -39,7 +39,7 @@ class AdminListWeeks(View):
                 week_monday=form.week_monday.data
             )
             try:
-                week.put()
+                week.update_ndb()
                 week_id = week.key.id()
                 flash(u'Week %s successfully saved.' % week_id, 'success')
                 #return redirect(url_for('show_route',week_id=week_id))

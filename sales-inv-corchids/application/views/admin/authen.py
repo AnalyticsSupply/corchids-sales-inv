@@ -3,13 +3,12 @@ Created on Dec 13, 2016
 
 @author: jason
 '''
-import logging
+
 import base64
-import json
 
 from google.appengine.api import users
 
-from application.models import UserModel
+from application.standard_models import UserModel
 from application.rest import Authenticator,DispatcherException,Authorizer
 
 from flask import make_response

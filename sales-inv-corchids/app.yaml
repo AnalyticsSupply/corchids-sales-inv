@@ -13,10 +13,17 @@ libraries:
   version: "2.6"
 - name: markupsafe
   version: "0.15"
+- name: MySQLdb
+  version: "latest"
 
 inbound_services:
 - warmup
 
+env_variables:
+    CLOUDSQL_CONNECTION_NAME: dwint1
+    CLOUDSQL_USER: jkbowle
+    CLOUDSQL_PASSWORD: Idm183as
+    
 handlers:
 - url: /favicon.ico
   static_files: application/static/img/favicon.ico
@@ -34,6 +41,14 @@ handlers:
 
 - url: /static
   static_dir: application/static
-
+  
+- url: /push_dw
+  script: run.application.app
+  login: admin
+  
+- url: /run_dw_task
+  script: run.application.app
+  login: admin
+  
 - url: .*
   script: run.application.app

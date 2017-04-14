@@ -1474,7 +1474,7 @@ class ModelHandler(object):
     @classmethod
     def put(cls, model):
         """Saves a new/updated model instance."""
-        model.put()
+        model.update_ndb()
         if Dispatcher.enable_etags:
             # compute the new etag for the modified instance
             cls.hash_model(model, True)

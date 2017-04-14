@@ -1,0 +1,8 @@
+cron:
+- description: "prep db sync"
+  url: /push_dw?task=all&process=prep
+  schedule: every 4 hours from 8:00 to 20:00
+  
+- description: "run db sync"
+  url: /push_dw?task=all&process=run
+  schedule: every 30 minutes from 8:00 to 20:00

@@ -10,7 +10,27 @@ indexes:
 # automatically uploaded to the admin console when you next deploy
 # your application using appcfg.py.
 
+- kind: GrowWeek
+  properties:
+  - name: week_number
+  - name: year
+
 - kind: Plant
   properties:
   - name: owner
   - name: name
+
+- kind: PlantGrow
+  properties:
+  - name: plant
+  - name: finish_week
+
+- kind: ProductPlant
+  properties:
+  - name: product
+  - name: plant
+
+- kind: ProductReserve
+  properties:
+  - name: product
+  - name: finish_week
