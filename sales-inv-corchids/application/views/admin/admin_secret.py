@@ -25,3 +25,11 @@ class AdminSecret(View):
                 flash(u'Rest User successfully saved.', 'success')
                 return redirect(url_for('inv_home'))
         return render_template('register.html', form=form)
+
+
+class AdminUpdate(View):
+    
+    @admin_required
+    def dispatch_request(self):
+        model_list = ['Plant','Customer','Supplier','Concept','Product']
+        return render_template('update_backend.html',models=model_list)

@@ -30,7 +30,7 @@ var set_message = function(message){
 function add_button(parent,text){
 	var button = parent.append('button');
 	    button.text(text)
-	      .attr('class','btn btn-primary btn-xs');
+	      .attr('class','btn btn-primary');
 	return button
 }
 
@@ -62,7 +62,7 @@ function clear_create_rows(wk_summ){
     	tr.append('td').attr('id',row.id+"_"+"reserved").text(row.reserved);
     	tr.append('td').attr('id',row.id+"_"+"available").text(row.available);
     	tr.append('td').attr('id',row.id+"_"+"actual").text(row.actual);
-        add_button_method(tr,'td','/plantweek/'+row.id,'view');
+        add_button_method(tr,'td','/plantweek/'+row.id,'View');
         var msg = "Update of "+row.plant+": ";
         flds = {actual:'i'};
         var td = tr.append('td');
@@ -177,12 +177,13 @@ function editRow(rowId, options, fields){
 			  $("#"+rowId+"_sel"+propertyName).val(val);
 			  
 		   }
-		   else{
+		   else if (typ == 'i'){
 			   var inField = $('#'+rowId+"_"+propertyName);
 			   var val = inField.text();
 			   inField.text("");
 			   //inField.css("background-color",'#fff');
 			   inField.attr('class','edit-cell');
+			   inField.css("display",'');
 			   inField.css("color",'black');
 			   d3.select('[id="'+rowId+'_'+propertyName+'"]')
 			     .append('span')
@@ -190,11 +191,29 @@ function editRow(rowId, options, fields){
 			     .attr('id',rowId+"_span"+propertyName)
 			     .text(val);
 		   }
+		   else {
+			   // DISPLAY/HIDDEN FIELDS
+		   }
 		   
 	   }
 	   $("#"+rowId+"_edit").hide();
 	   $("#"+rowId+"_save").show();
 	}
+
+    function saveRowDT(rowId,options,fields,update,order, model_name){
+    	saveRow(rowId,options,fields,update);
+		var t = $('#'+model_name+'-table').DataTable();
+		var d = t.row($('#'+rowId)).data();
+		for (i=0;i<order.length;i++){
+			var prop = order[i];
+			d[i] = $('#'+rowId+'_'+prop).text();
+		}
+		d[order.length] = $('#'+rowId+'_buttons').text();
+		t.row($('#'+rowId)).data(d).draw();
+		var btnId = rowId+"_buttons";
+		add_buttons(rowId,model_name,d3.select('[id="'+btnId+'"]'));
+		
+    }
 
 	function saveRow(rowId, options, fields, update){
 		update['id'] = rowId;
@@ -222,7 +241,7 @@ function editRow(rowId, options, fields){
 				
 			    update[propertyName] = val;
 			}
-			else{
+			else if (typ == 'i'){
 				var txtField = $('#'+idm);
 				txtField.attr('class','display-cell');	
 				var ids = rowId+"_span"+propertyName;
@@ -233,11 +252,14 @@ function editRow(rowId, options, fields){
 				txtField.css("background-color",'transparent');
 				update[propertyName] = val;
 			}
+			else{
+				// DISPLAY ONLY or HIDDEN FIELD
+			}
 		}
 		$("#"+rowId+"_edit").show();
 	    $("#"+rowId+"_save").hide();
 	    if (update.service_name == 'add'){
-	    	call_add_service(update.model_name,update);
+	    	call_add_service(update.model_name,update,fields);
 	    }
 	    else{
 	    	call_update_service(update);	
@@ -268,14 +290,19 @@ function editRow(rowId, options, fields){
 		});
 	}
 	
-	function call_add_service(model_name, update_fields){
+	function call_add_service(model_name, update_fields,fields){
 		var rowId = update_fields.id;
-		delete update_fields.id;
-		delete update_fields.model_name;
-		delete update_fields.service_name;
+		var field_values = {};
+		for (var propertyName in fields)
+		{
+			var typ = fields[propertyName];
+			if (typ != 'd'){
+				field_values[propertyName] = update_fields[propertyName];
+			}
+		}
 		
 		var inData = {};
-		inData[model_name] = update_fields;
+		inData[model_name] = field_values;
 		$.ajax({
 			type: "POST",
 			url: "/rest/"+model_name+"/",
@@ -355,14 +382,18 @@ function editRow(rowId, options, fields){
 		}
 	}
 	
-	function get_availability(pg_id){
+	function get_availability_default(pg_id){
+		get_availability(pg_id,'plant_avail');
+	}
+	
+	function get_availability(pg_id,wk_nm){
 		$.ajax({
 			url: "/plantgrow/availability/"+pg_id,
 			dataType: "json",
 			contentType: 'application/json; charset=UTF-8',
 			type: 'GET',
 			success: function(data){
-				d3.select('[id="plant_avail"]').text(data.availability);
+				d3.select('[id="'+wk_nm+'"]').text(data.availability);
 			},
 		     error: function(data){
 			        console.log(data.responseText);
@@ -412,8 +443,35 @@ function editRow(rowId, options, fields){
 			        }
 		})
 	}
+	function addRow(model_name,options, fields, data){
+		addRowDel(model_name,options, fields, data, false);
+	}
 	
-	function addRow(model_name, options, fields, data){
+	function delRow(rowId,options, fields, update){
+		update['id'] = rowId;
+    	update['soft_delete'] = true;
+    	if (update.service_name != 'add'){
+    		call_update_service(update);
+    	}
+    	
+    	$('#'+rowId).remove();
+    	$('#delete_modal').modal('hide');
+    	$('#modal_del_btn').off('click');
+    }
+	
+	function delRowDT(rowId, options, fields, update){
+		update['id'] = rowId;
+		update['soft_delete'] = true;
+		var t = $('#'+update['model_name']+'-table').DataTable();
+		if (update.service_name != 'add'){
+    		call_update_service(update);
+    	}
+    	t.row($('#'+rowId)).remove().draw(false);
+    	$('#delete_modal').modal('hide');
+    	$('#modal_del_btn').off('click');
+	}
+	
+	function addRowDel(model_name, options, fields, data, addDel){
 		var tableId = model_name+"-table";	
 		var rowId = tableId+"-newrow";
 		data['id'] = rowId;
@@ -422,28 +480,101 @@ function editRow(rowId, options, fields){
 		var tr = d3.select('[id="'+tableId+'"]')
 		  .select('tbody')
 		  .append('tr');
-		
 		tr.attr('id',rowId);
-		
 		for (var propertyName in fields){
-			tr.append('td')
-			  .attr('id',rowId+"_"+propertyName);
+			var typ = fields[propertyName];
+			if (typ != 'h'){
+				tr.append('td')
+				  .attr('id',rowId+"_"+propertyName);
+			}			
 		}
-		
-		tr.append('td')
-		  .attr('id',rowId+'_buttons')
-		  .append('a')
-		  .attr('id',rowId+"_save")
-		  .attr('class','btn btn-primary save_row')
-		  .on('click',function (){
-			  saveRow(rowId,options,fields,data);
-		  })
-		  .text('Save');
-		
-		//<a id='{{ crw.id }}_save' class="btn btn-primary save_row" onclick="saveRowCust('{{ crw.id }}')">Save</a>
-		
-		editRow(rowId,options,fields);
-				
+		var btn_td = tr.append('td');
+		  btn_td.attr('id',rowId+'_buttons')
+		    .append('a')
+		    .attr('id',rowId+"_save")
+		    .attr('class','btn btn-primary save_row')
+		    .on('click',function (){
+		    	  saveRow(rowId,options,fields,data);
+		    })
+		    .text('Save');
+		if (addDel == true){
+			btn_td.append('a')
+			      .attr('id',rowId+"_del")
+			      .attr('class','btn btn-primary del_row')
+			      .on('click',function(){
+			    	  $('#delete_modal').modal('show');
+			    	  $('#modal_del_btn').on('click', function(){
+			    		  delRow(rowId,options,fields, data);
+			    		  get_availability_default(data['plantgrow']);
+			    	  })})
+			      .text('Delete');    
+		}
+		//<a id='{{ crw.id }}_save' class="btn btn-primary save_row" onclick="saveRowCust('{{ crw.id }}')">Save</a	
+		editRow(rowId,options,fields);		
+	}
+	
+	function addRowDT(model_name, options, fields, data, order, addDel){
+		var tableId = model_name+"-table";	
+		var rowId = tableId+"-newrow";
+		data['id'] = rowId;
+		data['model_name'] = model_name;
+		data['service_name'] = 'add';
+		var t = $("#"+tableId).DataTable();
+		var cArray = [];
+		for (i=0;i<order.length;i++){
+			var prop = order[i];
+			var typ = fields[prop];
+			if (typ == 'o'){
+				cArray.push("");
+			}else{
+				if (typ != 'h'){
+				   cArray.push(0);
+				}
+			}
+		}
+		// add button cell
+		cArray.push("");
+		var r = t.row.add(cArray).draw(false).node();
+		$(r).attr('id',rowId);
+		var tdArray = $(r).children();
+		for (i=0;i<(order.length + 1);i++){
+			var cellId = rowId + "_buttons";
+			if (i < order.length){
+				cellId = rowId + "_" + order[i];
+			}
+			$(tdArray[i]).attr('id',cellId);
+		}
+		var cellId = rowId + "_buttons";
+		var btn_td = d3.select('[id="'+cellId+'"]');
+		btn_td.attr('id',rowId+'_buttons')
+	          .append('a')
+	          .attr('id',rowId+"_save")
+	          .attr('class','btn btn-primary save_row')
+	          .on('click',function (){
+	    	     saveRowDT(rowId,options,fields,data,order,model_name);
+	    	     var values = []
+	    	     for (var i=0;i<order.length;i++){
+	    	    	 values.push($('#'+rowId+'_'+order[i]).text());
+	    	     }
+	    	     values.push($('#'+rowId+'_buttons').text()); // for the buttons
+	    	     t.row($('#'+rowId)).data(values).draw(false);
+	            })
+	          .text('Save');
+	    if (addDel == true){
+		   btn_td.append('a')
+		         .attr('id',rowId+"_del")
+		         .attr('class','btn btn-primary del_row')
+		         .on('click',function(){
+		    	      $('#delete_modal').modal('show');
+		    	      $('#modal_del_btn').on('click', function(){
+		    	    	  data['model_name'] = model_name;
+		    		      delRowDT(rowId,options,fields, data);
+		    		      get_availability_default(data['plantgrow']);
+		    	      })
+		    	   })
+		      .text('Delete');    
+	     }
+	    editRow(rowId,options,fields);	
 	}
 	
 	function convert_save(old_id, new_id,model_name){
@@ -456,20 +587,39 @@ function editRow(rowId, options, fields){
 		      var end = oId.split("_")[1]
 		      d3.select(this).attr('id',oId.replace(old_id,new_id));
 		      if (end == 'buttons'){
-		         d3.select(this).append('a')
-		           .attr('id',new_id+"_edit")
-		           .attr('class','btn btn-primary edit_row')
-		           .on('click',function(){
-		               edit_row(new_id,model_name);
-		           })
-		           .text('Edit');
-		         d3.select('[id="'+old_id+"_save"+'"]')
-		           .attr('id',new_id+"_save")
-		           .on('click',function(){
-		              save_row(new_id,model_name)
-		           })
-		         $('#'+new_id+'_save').hide();
-		         $('#'+new_id+'_edit').show();
+		    	  add_buttons(new_id,model_name,d3.select(this));
+
 		      }
 		  });
+		}
+
+		function add_buttons(rowId, model_name, td_node){
+			     var msg = td_node.text().trim();
+			     td_node.text("");
+		         td_node.insert('a',":first-child")
+		           .attr('id',rowId+"_edit")
+		           .attr('class','btn btn-primary edit_row')
+		           .on('click',function(){
+		               edit_row(rowId,model_name);
+		           })
+		           .text('Edit');
+		         td_node.append('a')
+		           .attr('id',rowId+"_save")
+		           .attr('class','btn btn-primary save_row')
+		           .on('click',function(){
+		               save_row(rowId,model_name);
+		           })
+		           .text('Save');
+		         if (msg.endsWith('Delete')){
+		        	 td_node.append('a')
+			           .attr('id',rowId+"_del")
+			           .attr('class','btn btn-primary del_row')
+			           .on('click',function(){
+			               del_row(rowId,model_name);
+			           })
+			           .text('Delete');
+		         }
+		         
+		         $('#'+rowId+'_save').hide();
+		         $('#'+rowId+'_edit').show();
 		}

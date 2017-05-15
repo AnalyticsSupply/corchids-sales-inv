@@ -14,12 +14,22 @@ from google.appengine.api import app_identity
 from datetime import datetime
 from datetime import timedelta
 
+def update_model(model_name):
+    query = ndb.gql("Select * FROM "+model_name)
+    entries = query.fetch()
+    for entry in entries:
+        if model_name == "ProductReserve":
+            if entry.num_reserved == 0:
+                entry.soft_delete = True
+        entry.put()
+
 class NDBBase(ndb.Model):
     added_by = ndb.UserProperty(auto_current_user_add=True)
     updated_by = ndb.UserProperty(auto_current_user=True)
     timestamp = ndb.DateTimeProperty(auto_now_add=True)
     up_timestamp = ndb.DateTimeProperty(auto_now_add=True)
     dw_sync_status = ndb.StringProperty(default='updated')
+    soft_delete = ndb.BooleanProperty(default=False)
     
     @property
     def id(self):
@@ -216,7 +226,7 @@ class GrowWeek(NDBBase):
     
     @property 
     def reserves(self):
-        return ProductReserve.query(ProductReserve.finish_week == self.key)
+        return ProductReserve.query(ndb.AND(ProductReserve.finish_week == self.key, ProductReserve.soft_delete == False))
     
     
     @classmethod
@@ -319,26 +329,25 @@ class PlantGrow(NDBBase):
     
     @property
     def supplies(self):
-        return PlantGrowSupply.query(PlantGrowSupply.plantgrow == self.key)
+        return PlantGrowSupply.query(ndb.AND(PlantGrowSupply.plantgrow == self.key, PlantGrowSupply.forecast > 0))
     
     @property
     def forecasts(self):
         supps = self.supplies
         fcast = 0
         for supp in supps:
-            fcast = fcast + 0 if not supp.forecast else supp.forecast
+            fcast = fcast + supp.get_forecast()
         return fcast
     
     @property
     def reserves(self):
-        prds = self.plant.get().products
+        pps = ProductPlant.query(ProductPlant.plant == self.plant)
         resv = 0
-        for prd in prds:
-            p = prd.product.get()
-            pr = p.get_plant_reserved(self.finish_week,self.plant)
-            resv = resv + pr
-        
-        
+        for pp in pps:
+            prs = ProductReserve.query(ndb.AND(ndb.AND(ProductReserve.product == pp.product, ProductReserve.finish_week == self.finish_week), ProductReserve.soft_delete == False))
+            for pr in prs:
+                resv = resv + (pp.qty * pr.get_reserved())
+            
         return resv
     
     @classmethod
@@ -478,6 +487,11 @@ class PlantGrowSupply(NDBBase):
     confirmation_num = ndb.StringProperty()
     cost = ndb.FloatProperty()
     
+    def get_forecast(self):
+        if self.forecast:
+            return self.forecast
+        return 0
+    
     @classmethod
     def update(cls,argId, argPlant, argWeek, argSupplier, argForecast=0, argConfirmation=None, argCost=0):
         pgs = PlantGrowSupply.get_by_id(int(argId))
@@ -561,7 +575,7 @@ class Product(NDBBase):
         pr_qry = ProductReserve.query(ProductReserve.product == self.key).filter(ProductReserve.finish_week == finish_week)
         
         for pr in pr_qry:
-            num_reserved = num_reserved + 0 if not pr.num_reserved else pr.num_reserved
+            num_reserved = num_reserved + pr.get_reserved()
             
         return num_reserved
     
@@ -604,9 +618,10 @@ class ProductPlant(NDBBase):
 class CurrentDeal(NDBBase):
     ''' this is a product that is designed to help sell a plant that is overstocked '''
     product = ndb.KeyProperty(kind=Product,required=True)
+    qty_available = ndb.IntegerProperty()
+    active = ndb.BooleanProperty(default=False)
     
-    @property
-    def qty_available(self):
+    def calc_available(self):
         qry = CurrentDealWeeks.query(CurrentDealWeeks.current_deal == self.key)
         qty = 0
         for cdw in qry:
@@ -670,6 +685,11 @@ class ProductReserve(NDBBase):
     num_reserved = ndb.IntegerProperty(default=0)
     shipped = ndb.BooleanProperty()    
     
+    def get_reserved(self):
+        if self.num_reserved:
+            return self.num_reserved
+        return 0
+    
     @classmethod
     def get_db_reserve(cls, res_id):
         pr = ProductReserve.get_by_id(res_id)
@@ -693,12 +713,22 @@ class ProductReserve(NDBBase):
         return prdb
     
     @classmethod
+    def delete(cls, argId):
+        pr = ProductReserve.get_by_id(long(argId))
+        if pr:
+            pr.soft_delete = True
+            return pr.update_resp()
+        else:
+            resp = {'status':'not applicable','msg':'Entity does not exist... nothing to delete'}
+            return resp
+    
+    @classmethod
     def update(cls,argId, argCustomer, argWeek, argProduct, argReserved=0, argShipped=False):
         pr = ProductReserve.get_by_id(long(argId))
         pr.customer = ndb.Key(Customer,int(argCustomer))
         pr.finish_week = ndb.Key(GrowWeek,int(argWeek))
         pr.product = ndb.Key(Product,int(argProduct))
-        pr.num_reserved = int(argReserved)
+        pr.num_reserved = 0 if not argReserved else int(argReserved)
         pr.shipped = pr.convert_bool(argShipped)
         return pr.update_resp()
 

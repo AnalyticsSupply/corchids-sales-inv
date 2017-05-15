@@ -8,7 +8,7 @@ import traceback
 from flask_debugtoolbar import DebugToolbarExtension
 from werkzeug.debug import DebuggedApplication
 from flask_sqlalchemy import SQLAlchemy
-from models import Plant, Supplier
+from models import Plant, Supplier, update_model
 from standard_models import DBEntry
 
 from google.appengine.api.taskqueue import taskqueue
@@ -117,59 +117,11 @@ def update_customer_reserve():
         uJson = request.get_json()
         return restful.update_plantweek_entry(uJson)
     except Exception:
-        return traceback.format_exc()
-    
-#@app.route('/dw_week',methods=['GET'])
-#def sync_weeks():
-#    try:
-#        database.get_date()
-#        return jsonify({"status":"success"})
-#    except:
-#        traceback.print_exc(file=sys.stdout)
-#        print("Unexpected error:", sys.exc_info()[0])
-#        return jsonify({"status":"failed"})
-#    
-#@app.route('/dw_supplies',methods=['GET'])
-#def sync_supplies():
-#    try:
-#        database.get_supply(update=False)
-#        return jsonify({"status":"success"})
-#    except:
-#        traceback.print_exc(file=sys.stdout)
-#        print("Unexpected error:", sys.exc_info()[0])
-#        return jsonify({"status":"failed"})
-#    
-#@app.route('/dw_reserves',methods=['GET'])
-#def sync_reserves():
-#    try:
-#        database.get_reserves(update=False)
-#        return jsonify({"status":"success"})
-#    except:
-#        traceback.print_exc(file=sys.stdout)
-#        print("Unexpected error:", sys.exc_info()[0])
-#        return jsonify({"status":"failed"})
-#@app.route('/dw_summary',methods=['GET'])
-#def sync_summary():
-#    try:
-#        #database.get_summary(update=False)
-#        database.get_summary()
-#        return jsonify({"status":"success"})
-#    except:
-#        traceback.print_exc(file=sys.stdout)
-#        print("Unexpected error:", sys.exc_info()[0])
-#        return jsonify({"status":"failed"})    
-#@app.route('/dwsync',methods=['GET'])
-#def sync_db():
-#    try:
-#        database.get_date()
-#        database.get_supply()
-#        database.get_reserves()
-#        database.get_summary()
-#        return jsonify({"status":"success"})
-#    except:
-#        traceback.print_exc(file=sys.stdout)
-#        print("Unexpected error:", sys.exc_info()[0])
-#        return jsonify({"status":"failed"})
+        return traceback.format_exc()    
+
+@app.route('/update_info/<path:path>/',methods=['DELETE', 'GET', 'GET_METADATA', 'POST', 'PUT'])
+def get_update_info(path):
+    return restful.get_update_info(path)
 
 @app.route("/test_email", methods=['GET'])
 def send_test_email():
@@ -177,6 +129,7 @@ def send_test_email():
 
 @app.route('/push_dw',methods=['GET','POST'])
 def process_dw_task():
+    update_model('ProductReserve')
     process_task = request.values.get("task")
     process_step = request.values.get('process')
     task = taskqueue.add(
@@ -192,7 +145,9 @@ def run_dw_task():
     process = request.values.get("process") # either prep or run
     
     try:
-        if runtask == 'date':
+        if runtask == 'newprop':
+            update_model(process)
+        elif runtask == 'date':
             if process == 'prep':
                 database.set_date()
             else:

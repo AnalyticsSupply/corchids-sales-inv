@@ -25,6 +25,11 @@ indexes:
   - name: plant
   - name: finish_week
 
+- kind: PlantGrowSupply
+  properties:
+  - name: plantgrow
+  - name: forecast
+
 - kind: ProductPlant
   properties:
   - name: product
@@ -32,5 +37,12 @@ indexes:
 
 - kind: ProductReserve
   properties:
+  - name: finish_week
+  - name: product
+  - name: num_reserved
+
+- kind: ProductReserve
+  properties:
   - name: product
   - name: finish_week
+  - name: num_reserved

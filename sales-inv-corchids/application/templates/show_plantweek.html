@@ -9,12 +9,14 @@
     <div class="row">
     <div class="col-xs-12 col-md-12">
     <table><tr><td>
-    <form method="get" action="/plantweek/{{ prior }}"><button class="btn btn-primary btn-xs">
+    <form method="get" action="/plantweek/{{ prior }}"><button class="btn btn-primary">
     <span class="glyphicon glyphicon-chevron-left" aria-hidden="true">Prior Week</span></button></form></td><td>
     <h2>Summary for {{ plant.display_name }} (Week {{ week.week_number }}, {{ week.year }})</h2>
-    </td><td><form method="get" action="/plantweek/{{ next }}"><button class="btn btn-primary btn-xs">
-    <span class="glyphicon glyphicon-chevron-right" aria-hidden="true">Next Week</span></button></form></td></tr>
-    <tr><td>&nbsp;</td><td align="center"><h5>Availability: <span id='plant_avail'> {{ availability }}</span></h5></td><td>&nbsp;</td></tr>
+    </td><td><form method="get" action="/plantweek/{{ next }}"><button class="btn btn-primary">
+    Next Week<span class="glyphicon glyphicon-chevron-right" aria-hidden="true"></span></button></form></td></tr>
+    <tr><td align="center"><h5>Prior Week Avail: <span id='pri_plant_avail'></span></h5></td>
+    <td align="center"><h5>Availability: <span id='plant_avail'> {{ availability }}</span></h5></td>
+    <td align="center"><h5>Next Week Avail: <span id='nxt_plant_avail'></span></h5></td></tr>
     </table>
     <br><br>
     </div>
@@ -50,7 +52,7 @@
                 <th>Supplier</th>
                 <th>Forecast</th>
                 <th>Confirmation Number</th>
-                <th>&nbsp;</th>
+                <th> -- action -- </th>
             </tr>
         </thead>
         <tbody>
@@ -65,9 +67,16 @@
                     <a id='{{ plantweek.id }}_save' class="btn btn-primary save_row" onclick="save_row('{{ plantweek.id }}','plantgrowsupply')">Save</a>
                 </td>
             </tr>
-            {% else %}
-            <tr><td colspan="8">No weeks Found</td></tr>
+            
             {% endfor %}
+           <tfoot>
+            <tr>
+                <th>Supplier</th>
+                <th>Forecast</th>
+                <th>Confirmation Number</th>
+                <th> -- action -- </th>
+            </tr>
+        </tfoot>
         </tbody>
     </table></div>
     <p>
@@ -89,6 +98,7 @@
                 <th>Product Name</th>
                 <th>Product Reserve</th>
                 <th>{{ plant.display_name }}(s) Reserved</th>
+                <th> -- action -- </th>
             </tr>
         </thead>
         <tbody>
@@ -102,12 +112,21 @@
                 <td id='{{ crw.id }}_buttons'>
                     <a id='{{ crw.id }}_edit' class="btn btn-primary edit_row" onclick="edit_row('{{ crw.id }}','productreserve')">Edit</a>
                     <a id='{{ crw.id }}_save' class="btn btn-primary save_row" onclick="save_row('{{ crw.id }}','productreserve')">Save</a>
+                    <a id='{{ crw.id }}_del' class="btn btn-primary del_row" onclick="del_row('{{ crw.id }}','productreserve')">Delete</a>
                 </td>
             </tr>
-            {% else %}
-            <tr><td colspan="8">No weeks Found</td></tr>
+            
             {% endfor %}
         </tbody>
+        <tfoot>
+            <tr>
+                <th>Customer</th>
+                <th>Product Name</th>
+                <th>Product Reserve</th>
+                <th>{{ plant.display_name }}(s) Reserved</th>
+                <th> -- action -- </th>
+            </tr>
+        </tfoot>
     </table></div>
     <p>
         <a class="btn btn-primary" onclick='add_row("productreserve")'>
@@ -135,6 +154,20 @@
        var plant_id = {{ plant.id }}
        var plantgrow = {{ plantgrow }}
        
+     $(document).ready(function() {
+    	    $('#productreserve-table').DataTable( {
+    	        "scrollY":        "200px",
+    	        "scrollCollapse": true,
+    	        "paging":         false
+    	    } );
+    	    
+    	    $('#plantgrowsupply-table').DataTable( {
+    	        "scrollY":        "200px",
+    	        "scrollCollapse": true,
+    	        "paging":         false
+    	    } );
+    	} );
+       
     </script>
     {% for supplier in suppliers %}
         <script> supp_options.push("{{ supplier.name|safe }}:{{ supplier.id }}")</script>
@@ -154,21 +187,42 @@
     
         window.onload = function() {
     	    get_notes({{ plantgrow }},display_notes);
-    	    get_availability({{ plantgrow }});
+    	    get_availability({{ prior }},"pri_plant_avail");
+    	    get_availability({{ plantgrow }},"plant_avail");
+    	    get_availability({{ next }},"nxt_plant_avail");
+    	    
         };
         sOptions = {supplier:supp_options}
         rOptions = {customer:cust_options, product:prod_options}
-        sFields = {supplier:'o',forecast:'i',confirmation_num:'i'}
-        rFields = {customer:'o',product:'o',num_reserved:'i'}
+        sFields = {supplier:'o',forecast:'i',confirmation_num:'i',plantgrow:'h'}
+        rFields = {customer:'o',product:'o',num_reserved:'i',plant_reserved:'d', finish_week:'h'}
+        
+        rOrder = ['customer','product','num_reserved','plant_reserved'];
+        sOrder = ['supplier','forecast','confirmation_num'];
         
         function add_row(type){
+        	var data = {plantgrow: {{ plantgrow }}, finish_week: {{ week.id }}}
         	if (type == 'plantgrowsupply'){
-        		addRow("plantgrowsupply",sOptions, sFields, {plantgrow: {{ plantgrow }} });
-
+        		data['service_name'] = 'supplier_plants';
+        	    data['week'] = week_id;
+        	    data['plant'] = plant_id;
+        		//addRow("plantgrowsupply",sOptions, sFields, data);
+        	    addRowDT("plantgrowsupply",sOptions, sFields, data, sOrder, false);
         	}
         	if (type == 'productreserve'){
-        		addRow("productreserve",rOptions, rFields, {finish_week: {{ week.id }} });
-    
+        		data['service_name'] = 'customer_reserve';
+        	    data['week'] = week_id;
+        	    data['plant'] = plant_id;
+        	    addRowDT("productreserve",rOptions,rFields,data,rOrder,true);
+        		//var _id = "#"+type+"-table tr:last";
+        		//var lasOddEven = $(_id).attr('class');
+        		//var oddEven = 'even';
+        		//if (lasOddEven == 'even'){
+        		//	oddEven = 'odd';
+        		//}
+        		//addRowDel("productreserve",rOptions, rFields, data, true);
+        		//$(_id).attr('class',oddEven);
+        		//$(_id).attr('role','row');
         	}
         }
         function edit_row(rowId, model_name){
@@ -180,14 +234,33 @@
         	}
         }
         
+        function del_row(rowId, model_name){
+        	$('#delete_modal').modal('show');
+        	$('#modal_del_btn').on('click', function(){
+        		if(model_name == 'productreserve'){
+        			delRowDT(rowId, rOptions,rFields,{service_name: 'customer_reserve', model_name: model_name, week: week_id, plant: plant_id, plantgrow: {{ plantgrow }}});
+        			get_availability({{ plantgrow }},"plant_avail");
+        		}
+        		else{
+        			delRowDT(rowId, sOptions,sFields,{service_name: 'supplier_plants', model_name: model_name, week: week_id, plant: plant_id, plantgrow: {{ plantgrow }}});
+        			get_availability({{ plantgrow }},"plant_avail");
+        		}
+    			
+    		}); 
+        }
+        
+   
+        
         function save_row(rowId, model_name){
         	if (model_name == 'productreserve'){
-        		saveRow(rowId,rOptions,rFields, {service_name: 'customer_reserve', week: week_id, plant: plant_id});
-        		get_availability({{ plantgrow }});
+        		saveRowDT(rowId,rOptions,rFields, {service_name: 'customer_reserve', week: week_id, plant: plant_id},rOrder,model_name);
+        		get_availability({{ plantgrow }},"plant_avail");
+        		//get_availability({{ plantgrow }});
         	}
         	if (model_name == 'plantgrowsupply'){
-        		saveRow(rowId,sOptions,sFields, {service_name: 'supplier_plants', week: week_id, plant: plant_id});
-        		get_availability({{ plantgrow }});
+        		saveRowDT(rowId,sOptions,sFields, {service_name: 'supplier_plants', week: week_id, plant: plant_id},sOrder,model_name);
+        		get_availability({{ plantgrow }},"plant_avail");
+        		//get_availability({{ plantgrow }});
         	}
         }
         
@@ -296,11 +369,8 @@
               };
               save_note(notesId, noteInfo, function(notesId, noteId, noteInfo){
               	addNoteRow(notesId,noteId,noteInfo);
-              });
-              
+              }); 
             }
-
-
             $("#note-input").val("");
           }
 

@@ -24,6 +24,26 @@ Dispatcher.add_models({"plant": Plant,'productplant':ProductPlant,
                        "supplier":Supplier,"concept":Concept,
                        "plantgrow":PlantGrow,"productreserve":ProductReserve})
 
+
+updates = {'Product':{'options':[], 
+                      'fields':{'name':'i','sale_price':'i','qty_per_case':'i',
+                                'box_height':'i','box_width':'i','box_length':'i',
+                                'ti':'i','hi':'i'},
+                      'order':['name','sale_price','qty_per_case','box_height','box_width',
+                               'box_length','ti','hi'],
+                      'style':'new_screen'},
+           'Plant':{'options':[],
+                    'fields':{'name':'i','display_name':'i','inactive':'i'},
+                    'order':['name','display_name','inactive'],
+                    'style':'in_line'},
+           'Customer':{'options':[],
+                       'fields':{'customer_name':'i','description':'i','address':'i'},
+                       'order':['customer_name','description','address'],
+                       'style':'in_line'},
+           'Supplier':{'options':[],'fields':{'name':'i'},'order':['name'],'style':'in_line'},
+           'Concept':{'options':[],'fields':{'name':'i'},'order':['name'],'style':'in_line'}    
+           }
+
 Dispatcher.authenticator = authen.BasicAuthenticator()
 Dispatcher.authorizer = authen.OwnerAuthorizer()
 
@@ -56,6 +76,13 @@ def process_rest_request(path, request,response):
         
     
     return response
+
+@login_required
+def get_update_info(update_name):
+    if update_name in updates.keys():
+        return jsonify({'status':'success','message':'Pulled update info for: '+update_name,'payload':updates[update_name]})
+    else:
+        return jsonify({'status':'failed','message':'Update Name Does Not Exist','payload':{}})
 
 @login_required
 def get_week_summary(year, week_num):
@@ -104,7 +131,10 @@ def get_availability(plantgrow_id):
 @login_required
 def update_plantweek_entry(inData):
     if inData['service_name'] == 'customer_reserve':
-        resp = ProductReserve.update(inData['id'],inData['customer'], inData['week'], inData['product'], inData['num_reserved'])
+        if 'soft_delete' in inData:
+            resp = ProductReserve.delete(inData['id'])
+        else:
+            resp = ProductReserve.update(inData['id'],inData['customer'], inData['week'], inData['product'], inData['num_reserved'])
         return jsonify(resp)
     
     if inData['service_name'] == 'supplier_plants':

@@ -93,6 +93,7 @@ class AdminShowPlantWeek(View):
             crs = ProductReserve.query()
             crs = crs.filter(ProductReserve.product == pp.product)
             crs = crs.filter(ProductReserve.finish_week == week.key)
+            crs = crs.filter(ProductReserve.soft_delete == False)
             
             for cr in crs:
                 crw = ProductReserveWrap(cr)

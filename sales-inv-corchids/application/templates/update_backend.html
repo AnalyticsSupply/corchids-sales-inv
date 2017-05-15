@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h3>Select Update Category</h3>
+     <select id='update-select' class="form-control">
+       {% for model in models %}
+         <option>{{ model }}</option>
+       {% endfor %}
+     </select>
+     <div id='update_area' class='container'>
+     </div>
+{% endblock content %}
+{% block tail_script %}
+<script>
+$(document).ready(function() {
+    $('#update-select').change(function(){
+    	process_selection();
+    });
+    process_selection();
+} );
+
+function process_selection(){
+	var opt = $('#update-select option:selected').text();
+	get_update_info(opt);
+}
+
+function add_table(update_info){
+		if (d3.select('[id="update-table"]').empty() == false){
+			d3.select('[id="update-table_wrapper"]').remove();
+		}
+		var tbl = d3.select('[id="update_area"]').append('table');
+		tbl.attr('id','update-table');
+		tbl.attr('class','table table-sm table-bordered');
+		var row = tbl.append('thead').append('tr');
+		for (var i=0;i<update_info.order.length;i++){
+			row.append('th').text(update_info.order[i]);
+		}
+		$('#update-table').DataTable( {"scrollY":"600px","scrollCollapse": true,"paging":false} );
+}
+
+function add_data(data_arr, update_info){
+	var dt = $('#update-table').DataTable();
+	for (var j=0;j<data_arr.length;j++){
+		var element = data_arr[j];
+		var dt_row = [];
+		for (var i=0;i<update_info.order.length;i++){
+			var field = update_info.order[i];
+			var value = "";
+			if (element.hasOwnProperty(field)){
+				value = element[field];
+			}
+			dt_row.push(value);
+		}
+		dt.row.add(dt_row);
+	}
+	dt.draw();
+}
+
+function get_model_data(update_name,update_info){
+	$.ajax({
+		url:"/rest/"+update_name.toLowerCase(),
+		dataType: "json",
+		success: function(data){
+			console.log(data);
+			add_data(data.list[update_name.toLowerCase()],update_info);
+		},
+		error: function(data){
+			console.log(data);
+		}
+	});
+}
+
+function get_update_info(update_name){
+	$.ajax({
+		//type: "GET",
+		url: "/update_info/"+update_name,
+		dataType: "json",
+		success: function(data){
+			if (data.status == 'success'){
+				console.log(data.payload);
+				add_table(data.payload);
+				get_model_data(update_name,data.payload);
+			}else{
+				alert(data.message);
+			}
+
+	     },
+	     error: function(data){
+		        console.log(data.responseText);
+		        //alert(json.error);},
+		    },
+		    failure: function(data){
+		        console.log(data.responseText);
+		        //alert(json.error);
+		        }
+	})
+}
+</script>
+{% endblock tail_script %}
