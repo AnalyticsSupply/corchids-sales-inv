@@ -77,7 +77,7 @@ function clear_create_rows(wk_summ){
                  .attr('id',row.id+"_"+"save")
                  .attr('class',"btn btn-primary save_row")
                  .on('click', function(){
-                	 update = {service_name:'plantgrow',week:row.week_key,plant:row.plant_key};
+                	 update = {service_name:'plantgrow/update/',week:row.week_key,plant:row.plant_key};
                 	 saveRow(row.id,{},flds,update);
                 	 act = d3.select('[id="'+row.id+'_actual"]').text();
                 	 act = parseInt(act);
@@ -201,8 +201,13 @@ function editRow(rowId, options, fields){
 	}
 
     function saveRowDT(rowId,options,fields,update,order, model_name){
+    	var tableId = model_name+'-table';
+    	saveRowDT2(rowId,options,fields,update,order, model_name,tableId);
+    }
+
+    function saveRowDT2(rowId,options,fields,update,order, model_name,tableId){
     	saveRow(rowId,options,fields,update);
-		var t = $('#'+model_name+'-table').DataTable();
+		var t = $('#'+tableId).DataTable();
 		var d = t.row($('#'+rowId)).data();
 		for (i=0;i<order.length;i++){
 			var prop = order[i];
@@ -267,16 +272,20 @@ function editRow(rowId, options, fields){
 	}
 	
 	function call_update_service(update_fields){
+		var inData = adjust_data(update_fields);
 		$.ajax({
 		    type: "POST",
-		    url: "/"+update_fields.service_name+"/update/",
+		    url: "/"+update_fields.service_name,
 		    // The key needs to match your method's input parameter (case-sensitive).
-		    data: JSON.stringify(update_fields),
+		    data: JSON.stringify(inData),
 		    contentType: "application/json; charset=utf-8",
 		    dataType: "json",
 		    success: function(data){
-		    	var message = "Row Update Failed!!";
-		    	if (data.status == 'success'){message = "Row Update Succeeded!!!";}
+		    	var message = "Row Update Succeeded!!!"
+		    	if (data.hasOwnProperty('status')){
+		    		message = "Row Update Failed!!";
+			    	if (data.status == 'success'){message = "Row Update Succeeded!!!";}
+		    	}
 		    	set_message(message)
 		     },
 		     error: function(data){
@@ -514,7 +523,11 @@ function editRow(rowId, options, fields){
 	}
 	
 	function addRowDT(model_name, options, fields, data, order, addDel){
-		var tableId = model_name+"-table";	
+		var tableId = model_name+"-table";
+		addRowDT2(model_name, options, fields, data, order, addDel, tableId);
+	}
+	
+	function addRowDT2(model_name, options, fields, data, order, addDel, tableId){	
 		var rowId = tableId+"-newrow";
 		data['id'] = rowId;
 		data['model_name'] = model_name;

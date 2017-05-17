@@ -1037,9 +1037,12 @@ class BlobReferenceHandler(BaseReferenceHandler):
 
 class KeyHandler(BaseReferenceHandler):
     """PropertyHandler for primary 'key' of a Model instance."""
-
+    
+    model_type = None
+    
     def __init__(self, model_type):
         super(KeyHandler, self).__init__(KEY_PROPERTY_NAME, KEY_PROPERTY_TYPE)
+        self.model_type = model_type
         pass
 
     def get_query_field(self):
@@ -1059,7 +1062,8 @@ class KeyHandler(BaseReferenceHandler):
     
     def value_from_xml_string(self, value):
         """Wraps the xml value in the Key """
-        return ndb.Key(self.property_type._kind,int(value))
+        #print(self.property_type.kind())
+        return ndb.Key(self.model_type,int(value))
 
 class ListHandler(PropertyHandler):
     """PropertyHandler for lists property instances."""
@@ -1465,7 +1469,8 @@ class ModelHandler(object):
 
     def get(self, key):
         """Returns the model instance with the given key."""
-        model = self.model_type.get(key)
+        #model = self.model_type.get(key)
+        model = key.get()
         if model and Dispatcher.enable_etags:
             # compute pristine hash before any modifications are made
             self.hash_model(model)
@@ -2761,7 +2766,7 @@ class Dispatcher(webapp.RequestHandler):
 
         new_model = False
         if(key):
-            key = ndb.Key(key.strip())
+            key = ndb.Key(model_handler.model_type,int(key.strip()))
             if(given_key and (given_key != key)):
                 raise ValueError(
                     "key in data %s does not match request key %s" %

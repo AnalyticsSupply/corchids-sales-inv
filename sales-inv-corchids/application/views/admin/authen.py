@@ -68,8 +68,9 @@ class BasicAuthenticator(Authenticator):
 class OwnerAuthorizer(Authorizer):
 
     def can_read(self, dispatcher, model):
-        if(model.owner != users.get_current_user()):
-            dispatcher.not_found()
+        #if(model.owner != users.get_current_user()):
+        #    dispatcher.not_found()
+        pass
 
     def filter_read(self, dispatcher, models):
         return self.filter_models(models)
@@ -83,19 +84,21 @@ class OwnerAuthorizer(Authorizer):
         return query_expr
 
     def can_write(self, dispatcher, model, is_replace):
-        if(not model.is_saved()):
-            # creating a new model
-            model.owner = users.get_current_user()
-        elif(model.owner != users.get_current_user()):
-            dispatcher.not_found()
+        #if(not model.is_saved()):
+        #    # creating a new model
+        #    model.owner = users.get_current_user()
+        #elif(model.owner != users.get_current_user()):
+        #    dispatcher.not_found()
+        pass
 
     def filter_write(self, dispatcher, models, is_replace):
         return self.filter_models(models)
 
     def can_delete(self, dispatcher, model_type, model_key):
-        query = model_type.all(True).filter("owner = ", users.get_current_user()).filter("__key__ = ", model_key)
-        if(len(query.fetch(1)) == 0):
-            dispatcher.not_found()
+        #query = model_type.all(True).filter("owner = ", users.get_current_user()).filter("__key__ = ", model_key)
+        #if(len(query.fetch(1)) == 0):
+        #    dispatcher.not_found()
+        pass
 
     def filter_models(self, models):
         #cur_user = users.get_current_user()

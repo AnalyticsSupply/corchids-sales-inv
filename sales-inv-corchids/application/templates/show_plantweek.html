@@ -203,14 +203,14 @@
         function add_row(type){
         	var data = {plantgrow: {{ plantgrow }}, finish_week: {{ week.id }}}
         	if (type == 'plantgrowsupply'){
-        		data['service_name'] = 'supplier_plants';
+        		data['service_name'] = 'supplier_plants/update/';
         	    data['week'] = week_id;
         	    data['plant'] = plant_id;
         		//addRow("plantgrowsupply",sOptions, sFields, data);
         	    addRowDT("plantgrowsupply",sOptions, sFields, data, sOrder, false);
         	}
         	if (type == 'productreserve'){
-        		data['service_name'] = 'customer_reserve';
+        		data['service_name'] = 'customer_reserve/update/';
         	    data['week'] = week_id;
         	    data['plant'] = plant_id;
         	    addRowDT("productreserve",rOptions,rFields,data,rOrder,true);
@@ -234,15 +234,19 @@
         	}
         }
         
+        function adjust_data(inData){
+        	return inData;
+        }
+        
         function del_row(rowId, model_name){
         	$('#delete_modal').modal('show');
         	$('#modal_del_btn').on('click', function(){
         		if(model_name == 'productreserve'){
-        			delRowDT(rowId, rOptions,rFields,{service_name: 'customer_reserve', model_name: model_name, week: week_id, plant: plant_id, plantgrow: {{ plantgrow }}});
+        			delRowDT(rowId, rOptions,rFields,{service_name: 'customer_reserve/update/', model_name: model_name, week: week_id, plant: plant_id, plantgrow: {{ plantgrow }}});
         			get_availability({{ plantgrow }},"plant_avail");
         		}
         		else{
-        			delRowDT(rowId, sOptions,sFields,{service_name: 'supplier_plants', model_name: model_name, week: week_id, plant: plant_id, plantgrow: {{ plantgrow }}});
+        			delRowDT(rowId, sOptions,sFields,{service_name: 'supplier_plants/update/', model_name: model_name, week: week_id, plant: plant_id, plantgrow: {{ plantgrow }}});
         			get_availability({{ plantgrow }},"plant_avail");
         		}
     			
@@ -253,12 +257,12 @@
         
         function save_row(rowId, model_name){
         	if (model_name == 'productreserve'){
-        		saveRowDT(rowId,rOptions,rFields, {service_name: 'customer_reserve', week: week_id, plant: plant_id},rOrder,model_name);
+        		saveRowDT(rowId,rOptions,rFields, {service_name: 'customer_reserve/update/', week: week_id, plant: plant_id},rOrder,model_name);
         		get_availability({{ plantgrow }},"plant_avail");
         		//get_availability({{ plantgrow }});
         	}
         	if (model_name == 'plantgrowsupply'){
-        		saveRowDT(rowId,sOptions,sFields, {service_name: 'supplier_plants', week: week_id, plant: plant_id},sOrder,model_name);
+        		saveRowDT(rowId,sOptions,sFields, {service_name: 'supplier_plants/update/', week: week_id, plant: plant_id},sOrder,model_name);
         		get_availability({{ plantgrow }},"plant_avail");
         		//get_availability({{ plantgrow }});
         	}

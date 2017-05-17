@@ -8,10 +8,19 @@
        {% endfor %}
      </select>
      <div id='update_area' class='container'>
+        <div id='update_action' >
+        <a class="btn btn-primary" onclick='add_entry()'>
+            <i class="icon-plus-sign icon-white"></i>
+            Add
+        </a>
+        </div>
      </div>
 {% endblock content %}
 {% block tail_script %}
 <script>
+var uInfo = {};
+var model_name = "";
+
 $(document).ready(function() {
     $('#update-select').change(function(){
     	process_selection();
@@ -19,12 +28,41 @@ $(document).ready(function() {
     process_selection();
 } );
 
+function add_entry(){
+	var data = {service_name: model_name};
+	addRowDT2(model_name,{},uInfo.fields,data,uInfo.order,false,'update-table');
+}
+
 function process_selection(){
 	var opt = $('#update-select option:selected').text();
 	get_update_info(opt);
+	model_name = opt.toLowerCase();
+}
+
+function edit_row(rowId, modName){
+	editRow(rowId,{},uInfo.fields);
+}
+
+function save_row(rowId, modName){
+	var data = {service_name: 'rest/'+model_name+"/"+rowId+"/"};
+    saveRowDT2(rowId,{},uInfo.fields,data,uInfo.order,model_name,'update-table');
+}
+
+function adjust_data(inData){
+	var retData = {};
+	retData[model_name] = {key:inData['id']};
+	for (var i=0;i<uInfo.order.length;i++){
+		retData[model_name][uInfo.order[i]] = inData[uInfo.order[i]];
+	}
+	return retData;
+}
+
+function del_row(rowId, model_name){
+	
 }
 
 function add_table(update_info){
+	    uInfo = update_info;
 		if (d3.select('[id="update-table"]').empty() == false){
 			d3.select('[id="update-table_wrapper"]').remove();
 		}
@@ -35,11 +73,12 @@ function add_table(update_info){
 		for (var i=0;i<update_info.order.length;i++){
 			row.append('th').text(update_info.order[i]);
 		}
+		row.append('th').text(" -- action -- ");
 		$('#update-table').DataTable( {"scrollY":"600px","scrollCollapse": true,"paging":false} );
 }
 
 function add_data(data_arr, update_info){
-	var dt = $('#update-table').DataTable();
+	var dt = $('#update-table').dataTable();
 	for (var j=0;j<data_arr.length;j++){
 		var element = data_arr[j];
 		var dt_row = [];
@@ -51,9 +90,25 @@ function add_data(data_arr, update_info){
 			}
 			dt_row.push(value);
 		}
-		dt.row.add(dt_row);
+		dt_row.push(""); // for the action column
+		var addid = dt.fnAddData(dt_row);
+		var row = dt.fnGetNodes(addid);
+		$(row).attr('id',element['key']);
+		var children = $(row).children();
+		for (var i=0;i<children.length;i++){
+			var child = children[i];
+			if (i < update_info.order.length){
+				$(child).attr('id',element['key']+"_"+update_info.order[i]);	
+			} else {
+				// action column
+				var cellId = element['key'] + "_buttons";
+				$(child).attr('id',cellId);
+				add_buttons(element['key'], model_name, d3.select('[id="'+cellId+'"]'));
+			}
+			
+		}
 	}
-	dt.draw();
+	//dt.draw();
 }
 
 function get_model_data(update_name,update_info){

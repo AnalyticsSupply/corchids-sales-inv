@@ -130,16 +130,17 @@ def get_availability(plantgrow_id):
 
 @login_required
 def update_plantweek_entry(inData):
-    if inData['service_name'] == 'customer_reserve':
+    if inData['service_name'].startswith('customer_reserve'):
         if 'soft_delete' in inData:
             resp = ProductReserve.delete(inData['id'])
         else:
             resp = ProductReserve.update(inData['id'],inData['customer'], inData['week'], inData['product'], inData['num_reserved'])
         return jsonify(resp)
     
-    if inData['service_name'] == 'supplier_plants':
+    if inData['service_name'].startswith('supplier_plants'):
         resp = PlantGrowSupply.update(inData['id'], inData['plant'], inData['week'], inData['supplier'], inData['forecast'], inData['confirmation_num'])
         return jsonify(resp)
+    return {'status':'Failed','message':'No valid service found'}
                                                                                                                                     
 
 @login_required
