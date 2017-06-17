@@ -133,7 +133,7 @@ class Plant(NDBBase):
     """ Plants for which we have forecasted values"""
     name = ndb.StringProperty(required=True)
     display_name = ndb.StringProperty(required=True)
-    image_name = ndb.StringProperty(required=True)   
+    image_name = ndb.StringProperty(required=False)   
     inactive = ndb.BooleanProperty(default=False)
     
     @classmethod
@@ -544,15 +544,15 @@ class Product(NDBBase):
     
     @property
     def product_concepts(self):
-        return ProductConcept.query(ProductConcept.product == self.key)
+        return ProductConcept.query(ndb.AND(ProductConcept.product == self.key, ProductConcept.soft_delete == False))
     
     @property
     def product_reserve(self):
-        return ProductReserve.query(ProductReserve.product == self.key)
+        return ProductReserve.query(ndb.AND(ProductReserve.product == self.key, ProductReserve.soft_delete == False))
     
     @property
     def product_plants(self):
-        return ProductPlant.query(ProductPlant.product == self.key)
+        return ProductPlant.query(ndb.AND(ProductPlant.product == self.key, ProductPlant.soft_delete == False))
     
     def get_qty_available(self, finish_week, plant=None):
         resv = self.get_reserved(finish_week)

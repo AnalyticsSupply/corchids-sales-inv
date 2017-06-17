@@ -16,7 +16,7 @@ from application.models import GrowWeek,PlantGrow, ProductReserveWrap, Supplier,
 from application.models import ProductPlant, ProductReserve,Plant,Product
 from google.appengine.ext.ndb import Model,Query,Key
 
-from application.decorators import login_required
+from application.decorators import login_required, admin_required
 #from datetime import datetime
 
 
@@ -61,6 +61,22 @@ class AdminShowWeek(View):
         pgd = week.week_summary()
         
         return render_template("show_week.html",week=week,plantgrows=pgd)
+    
+class AdminEditCreateProduct(View):
+    
+    @admin_required
+    def dispatch_request(self, product_id):
+        product = None
+        if product_id == 11111:  # we'll use this to symbolize a new entry
+            product = Product()
+            product.name = ""
+            product.put()
+            product_id = product.id
+        else:
+            product = Product.get_by_id(product_id)
+        concepts = product.product_concepts
+        plants = product.product_plants
+        return render_template("edit_new_product.html",productId=product_id, product=product, concepts=concepts, plants=plants)
 
 class AdminShowPlantWeek(View):
     

@@ -123,13 +123,18 @@ def update_customer_reserve():
 def get_update_info(path):
     return restful.get_update_info(path)
 
+@app.route('/options/<path:path>/',methods=['GET'])
+def get_options(path):
+    r = restful.get_option_field(path, request.values)
+    return jsonify(r)
+
+
 @app.route("/test_email", methods=['GET'])
 def send_test_email():
     return restful.send_test_email()
 
 @app.route('/push_dw',methods=['GET','POST'])
 def process_dw_task():
-    update_model('ProductReserve')
     process_task = request.values.get("task")
     process_step = request.values.get('process')
     task = taskqueue.add(

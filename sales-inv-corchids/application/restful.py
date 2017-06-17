@@ -8,6 +8,8 @@ THis is just my way of making the REST stuff work
 from application.models import Plant,Customer,GrowWeek,Supplier, Concept,PlantGrow,Product,ProductConcept,\
     ProductReserve,ProductPlant,PlantGrowSupply, PlantGrowNotes, EmailNotifications
 
+from google.appengine.ext import ndb
+
 from application.views.admin import authen
 from datetime import datetime
 from application.rest import DispatcherException, Dispatcher
@@ -25,23 +27,135 @@ Dispatcher.add_models({"plant": Plant,'productplant':ProductPlant,
                        "plantgrow":PlantGrow,"productreserve":ProductReserve})
 
 
+form_options = {'boolean':{'type':'fixed',
+                           'values':['true','false'],
+                           'field':'boolean',
+                           'key':'id',
+                           'name':'boolean',
+                           'filters':[]},
+               'customers':{'type':'model',
+                            'values':[],
+                            'field':'customer_name',
+                            'key':'id',
+                            'name':'Customer',
+                            'filters':[]},
+                'suppliers':{'type':'model',
+                             'values':[],
+                             'field':'name',
+                             'name':'Supplier',
+                             'key':'id',
+                             'filters':[]},
+                'plants':{'type':'model',
+                          'values':[],
+                          'field':'name',
+                          'key':'id',
+                          'name':'Plant',
+                          'filters':[{'field':'inactive','key':False,'type':'Long'}]},
+                'concepts':{'type':'model',
+                            'values':[],
+                            'field':'name',
+                            'key':'id',
+                            'name':'Concept',
+                            'filters':[]},
+                'product_concepts':{'type':'model',
+                            'values':[],
+                            'field':'concept.name',
+                            'key':'concept.id',
+                            'name':'ProductConcept',
+                            'filters':[{'field':'product','key':True,'type':'Product'}]},
+                'product_plants':{'type':'model',
+                                  'values':[],
+                                  'field':'plant.name',
+                                  'key':'plant.id',
+                                  'name':'ProductPlant',
+                                  'filters':[{'field':'product','key':True,'type':'Product'}]},
+                'products':{'type':'model',
+                            'values':[],
+                            'field':'product.name',
+                            'key':'product.id',
+                            'name':'ProductPlant',
+                            'filters':[{'field':'plant','key':True,'type':'Plant'}]}
+                           }
+@admin_required
+def get_option_field(field, filters):
+    form_field = form_options.get(field,None)
+    resp = {}
+    resp['values'] = []
+    if form_field:
+        if form_field['type'] == 'fixed':
+            for value in form_field['values']:
+                resp['values'].append({'key':value, 'value':value})
+        else:
+            if form_field['type'] == 'model':
+                where_cls = ""
+                if filters and len(form_field['filters']) > 0:
+                    wheres = []
+                    for filt in form_field['filters']:
+                        name = filt['field']
+                        isKey = filt['key']
+                        mType = filt['type']
+                        if name in filters.keys():
+                            if not isKey:                            
+                                wheres.append("{} = {}".format(name,filters[name]))
+                            else:
+                                wheres.append("{} = KEY('{}',{})".format(name,mType,filters[name]))
+                    if len(wheres) > 0:
+                        where_cls = "WHERE "
+                        for w in wheres:
+                            where_cls = where_cls + w + " AND "
+                        where_cls = where_cls[:-5]
+                stmt = "SELECT * FROM {} "+where_cls
+                stmt = stmt.format(form_field['name'])
+                model = ndb.gql(stmt)
+                for m in model:
+                    key = ""
+                    field = ""
+                    field_name = form_field['field']
+                    if len(field_name.split(".")) > 1:
+                        parts = field_name.split(".")
+                        p = m
+                        for i in range(len(parts)):
+                            if i+1 < len(parts):
+                                p = getattr(p,parts[i]).get()
+                            else:
+                                field = getattr(p,parts[i])
+                    else:
+                        field = getattr(m,form_field['field'])
+                    key_name = form_field['key']
+                    if len(key_name.split(".")) > 1:
+                        parts = key_name.split(".")
+                        p = m
+                        for i in range(len(parts)):
+                            if i+1 < len(parts):
+                                p = getattr(p,parts[i]).get()
+                            else:
+                                key = getattr(p,parts[i])
+                    else:
+                        key = getattr(m,form_field['key'])
+                            
+                    resp['values'].append({'key':key,'value':field})
+    return resp
+                
+        
+    
+
 updates = {'Product':{'options':[], 
-                      'fields':{'name':'i','sale_price':'i','qty_per_case':'i',
-                                'box_height':'i','box_width':'i','box_length':'i',
-                                'ti':'i','hi':'i'},
-                      'order':['name','sale_price','qty_per_case','box_height','box_width',
-                               'box_length','ti','hi'],
+                      'update_name':'Product',
+                      'fields':{'name':'i','sale_price':'i','qty_per_case':'i'},
+                      'order':['name','sale_price','qty_per_case'],
                       'style':'new_screen'},
-           'Plant':{'options':[],
-                    'fields':{'name':'i','display_name':'i','inactive':'i'},
+           'Plant':{'options':[{'field_name':'inactive', 'option_name':'boolean'}],
+                    'update_name':'Plant',
+                    'fields':{'name':'i','display_name':'i','inactive':'o'},
                     'order':['name','display_name','inactive'],
                     'style':'in_line'},
            'Customer':{'options':[],
+                       'update_name':'Customer',
                        'fields':{'customer_name':'i','description':'i','address':'i'},
                        'order':['customer_name','description','address'],
                        'style':'in_line'},
-           'Supplier':{'options':[],'fields':{'name':'i'},'order':['name'],'style':'in_line'},
-           'Concept':{'options':[],'fields':{'name':'i'},'order':['name'],'style':'in_line'}    
+           'Supplier':{'options':[],'update_name':'Supplier','fields':{'name':'i'},'order':['name'],'style':'in_line'},
+           'Concept':{'options':[],'update_name':'Concept','fields':{'name':'i'},'order':['name'],'style':'in_line'}    
            }
 
 Dispatcher.authenticator = authen.BasicAuthenticator()

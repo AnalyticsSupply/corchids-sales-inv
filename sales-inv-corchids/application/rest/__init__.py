@@ -17,6 +17,9 @@
 
 """Rest handler for appengine Models.
 
+SOURCE: https://github.com/jahlborn/appengine-rest-server
+(modified to work with NDB instead of DB)
+    
 To use with an existing application:
 
     import rest

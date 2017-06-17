@@ -271,6 +271,13 @@ function editRow(rowId, options, fields){
 	    }
 	}
 	
+	function check_numeric(value){
+		if ($.isNumeric(value)){
+			return value;
+		}
+		return 0;
+	}
+	
 	function call_update_service(update_fields){
 		var inData = adjust_data(update_fields);
 		$.ajax({
@@ -482,7 +489,7 @@ function editRow(rowId, options, fields){
 	
 	function addRowDel(model_name, options, fields, data, addDel){
 		var tableId = model_name+"-table";	
-		var rowId = tableId+"-newrow";
+		var rowId = tableId+"-newrow"+Math.round(Math.random() * 1000);
 		data['id'] = rowId;
 		data['model_name'] = model_name;
 		data['service_name'] = 'add';
@@ -528,7 +535,7 @@ function editRow(rowId, options, fields){
 	}
 	
 	function addRowDT2(model_name, options, fields, data, order, addDel, tableId){	
-		var rowId = tableId+"-newrow";
+		var rowId = tableId+"-newrow"+Math.round(Math.random() * 1000);
 		data['id'] = rowId;
 		data['model_name'] = model_name;
 		data['service_name'] = 'add';
@@ -606,6 +613,21 @@ function editRow(rowId, options, fields){
 		  });
 		}
 
+	function get_option_data(model_name, field_name, option_name, callback_func){
+		$.ajax({
+			url:"/options/"+option_name,
+			dataType: "json",
+			success: function(data){
+				console.log(data);
+				callback_func(model_name, field_name, data);
+			},
+			error: function(data){
+				console.log("ERROR!!!!");
+				console.log(data);
+			}
+		});
+	}
+	
 		function add_buttons(rowId, model_name, td_node){
 			     var msg = td_node.text().trim();
 			     td_node.text("");

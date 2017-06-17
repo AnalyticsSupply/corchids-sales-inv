@@ -1,0 +1,241 @@
+{% extends "base.html" %}
+{% block style_block %}
+<!--     <style type="text/css">
+        table.ta1ble { width: 60%; }
+    </style> -->
+{% endblock %}
+
+{% block content %}
+    <div class="row">
+    <h2>Update/Create Product: {{ product.name }}</h2>
+    
+    <p>
+        <a class="btn btn-primary" onclick="save_product()">
+            <i class="icon-plus-sign icon-white"></i>
+            Save Product
+        </a>
+        <a class="btn btn-primary" onclick="go_to_admin()">
+            <i class="icon-plus-sign icon-white"></i>
+            Back To Admin
+        </a>
+    </p>
+    <div class="col-xs-12 col-md-12">
+    <h3>Main Product Info</h3>
+    <div class="table-responsive">
+    <table id="productinfo-table" class="table table-sm table-bordered">
+    	<thead>
+    	   <tr>
+    	      <th>Name</th>
+    	      <th>Sale Price</th>
+    	      <th>Qty Per Case</th>
+    	      <th>Active</th>
+    	   </tr>
+    	</thead>
+    	<tr>
+    	   <td id='product.name'><input type="text" name="name" value="{{ product.name }}"/></td>
+    	   <td id='product.sale_price'><input type="text" name="sale_price" value="{{ product.sale_price }}"/></td>
+    	   <td id='product.qty_per_case'><input type="text" name="qty_per_case" value="{{ product.qty_per_case }}"/></td>
+    	   <td id='product.soft_delete'><select name="soft_delete" id="soft_delete">
+    	   {% if product.soft_delete %}
+    	       <option selected="selected" value="True">False</option>
+    	       <option value="False">True</option>
+    	   {% else %}
+    	       <option value="True">False</option>
+    	       <option selected="selected" value="False">True</option>
+    	   {% endif %}
+    	   </select></td>
+    	</tr>
+    </table></div>
+    <h3>Product Details</h3>
+    
+    <div class="table-responsive">
+    <table id="productdetails-table" class="table table-sm table-bordered">
+    	<thead>
+    	   <tr>
+
+    	      <th>Box Height</th>
+    	      <th>Box Length</th>
+    	      <th>Ti</th>
+    	      <th>Hi</th>
+    	   </tr>
+    	</thead>
+    	<tr>
+    	   <td id='product.box_height'><input type="text" name="box_width" value="{{ product.box_height }}"/></td>
+    	   <td id='product.box_width'><input type="text" name="box_width" value="{{ product.box_width }}"/></td>
+    	   <td id='product.ti'><input type="text" name="ti" value="{{ product.ti }}"/></td>
+    	   <td id='product.hi'><input type="text" name="hi" value="{{ product.hi }}"/></td>
+    	</tr>
+    </table>
+    </div>
+    </div>
+    
+    <div class="col-xs-12 col-md-12">
+    <h3>Product Concept(s)</h3>
+    <div class="table-responsive">
+    <table id="productconcept-table" class="table table-sm table-bordered">
+    	<thead>
+    		<tr><th>Concept Name</th><th> -- action -- </th></tr>
+    	</thead>
+    	<tbody>
+    	{% for concept in concepts %}
+    	   <tr id='{{ concept.id }}'><td id="{{ concept.id }}_concept">{{ concept.concept.get().name }}</td>
+    	   <td id='{{ concept.id }}_buttons'>
+                    <a id='{{ concept.id }}_edit' class="btn btn-primary edit_row" onclick="edit_row('{{ concept.id }}','productconcept')">Edit</a>
+                    <a id='{{ concept.id }}_save' class="btn btn-primary save_row" onclick="save_row('{{ concept.id }}','productconcept')">Save</a>
+                    <a id='{{ concept.id }}_del' class="btn btn-primary del_row" onclick="del_row('{{ concept.id }}','productconcept')">Delete</a>
+                </td>
+    	   </tr>
+    	{% endfor %}
+    	</tbody>
+    </table>
+    </div>
+    <p>
+        <a class="btn btn-primary" onclick="add_row('productconcept')">
+            <i class="icon-plus-sign icon-white"></i>
+            Add Concept
+        </a>
+    </p>
+    </div>
+    
+    <div class="col-xs-12 col-md-12">
+    <h3>Product Plant(s)</h3>
+    <div class="table-responsive">
+    <table id="productplant-table" class="table table-sm table-bordered">
+    	<thead>
+    		<tr><th>Plant</th>
+    		<th>Plant Qty</th><th> -- action -- </th></tr>
+    	</thead>
+    	<tbody>
+    	{% for plant in plants %}
+    	   <tr id='{{ plant.id }}'><td id="{{ plant.id }}_plant">{{ plant.plant.get().name }}</td>
+    	   <td id="{{ plant.id }}_qty">{{ plant.qty }}</td>
+    	   <td id='{{ plant.id}}_buttons'>
+                    <a id='{{ plant.id }}_edit' class="btn btn-primary edit_row" onclick="edit_row('{{ plant.id }}','productplant')">Edit</a>
+                    <a id='{{ plant.id }}_save' class="btn btn-primary save_row" onclick="save_row('{{ plant.id}}','productplant')">Save</a>
+                    <a id='{{ plant.id }}_del' class="btn btn-primary del_row" onclick="del_row('{{ plant.id }}','productplant')">Delete</a>
+                </td>
+    	   </tr>
+    	{% endfor %}
+    	</tbody>
+    </table>
+    </div>
+    <p>
+        <a class="btn btn-primary" onclick="add_row('productplant')"">
+            <i class="icon-plus-sign icon-white"></i>
+            Add Plant
+        </a>
+    </p>
+    </div>
+    </div>
+{% endblock content %}
+
+{% block footer %}
+    {% include 'notes_modal.html' %} {# pull in notes_modal form (modal dialog) #}
+{% endblock footer %}
+
+{% block tail_script %}
+    <script>
+    var productId = {{ productId }};
+    var option_fields = ['concepts','plants'];
+    var option_rename = {concepts:{model:'productconcept',field:'concept'},plants:{model:'productplant',field:'plant'}};
+    var fld_options = {productconcept:{},productplant:{}};
+    
+    var uInfo = {productconcept:{fields:{concept:'o',product:'h',soft_delete:'h'},order:['concept']},
+    		     productplant: {fields:{plant:'o',qty:'i',product:'h',soft_delete:'h'},order:['plant','qty']},
+    		     product: {fields:{name:'i',sale_price:'i',qty_per_case:'i',soft_delete:'i',
+    		    	       box_height:'i',box_width:'i',ti:'i',hi:'i'},order:['name','sale_price','qty_per_case','soft_delete',
+    		    	    	                                                  'box_height','box_width','ti','hi']}};
+    		     
+    
+    
+    
+    $(document).ready(function() {
+        for (var i=0;i<option_fields.length;i++){
+        	opt_field = option_fields[i];
+        	get_option_data("blah",opt_field,opt_field,add_options);
+        }
+        
+        $('#productconcept-table').DataTable( {
+	        "scrollY":        "200px",
+	        "scrollCollapse": true,
+	        "paging":         false
+	    } );
+	    
+	    $('#productplant-table').DataTable( {
+	        "scrollY":        "200px",
+	        "scrollCollapse": true,
+	        "paging":         false
+	    } );
+    } );
+    
+    function add_options(blah, fld_name, options)
+    {
+    	field_name = option_rename[fld_name]['field'];
+    	model_name = option_rename[fld_name]['model']
+    	fld_options[model_name][field_name] = []
+        for (var i = 0; i<options.values.length;i++){
+        	fld_options[model_name][field_name].push(options.values[i]['value']+":"+options.values[i]['key']);   	
+        }
+    	fld_options[model_name][field_name].sort();
+    }
+    
+    function edit_row(rowId, model_name){
+    	editRow(rowId,fld_options[model_name],uInfo[model_name]['fields']);
+    }
+    
+    function add_row(type){
+    	var data = {product: {{ productId }}}
+    	data['service_name'] = 'rest/'+type+'/';
+    	addRowDT(type,fld_options[type], uInfo[type]['fields'], data, uInfo[type]['order'], false);
+    }
+    
+    function adjust_data(update_fields){
+    	var rowId = update_fields.id;
+		var field_values = {};
+		var fields = uInfo[update_fields.model_name]['fields'];
+		for (var propertyName in fields)
+		{
+			var typ = fields[propertyName];
+			if (typ != 'd'){
+				field_values[propertyName] = update_fields[propertyName];
+			}
+		}
+		
+		var inData = {};
+		inData[update_fields.model_name] = field_values;
+    	return inData;
+    }
+    
+    function del_row(rowId, model_name){
+    	$('#delete_modal').modal('show');
+    	$('#modal_del_btn').on('click', function(){
+			delRowDT(rowId, fld_options[model_name],uInfo[model_name]['fields'],{service_name: 'rest/'+model_name+'/'+rowId+'/', model_name: model_name, product: {{ productId }}});
+		}); 
+    }
+    
+
+    function save_product(){
+    	data = {model_name:'product',service_name:'rest/product/'+{{ productId }}+'/'};
+    	data['soft_delete'] = $( "#soft_delete option:selected" ).val();
+    	data['name'] = $('input[name=name]').val();
+    	data['sale_price'] = check_numeric($('input[name=sale_price]').val());
+    	data['qty_per_case'] = check_numeric($('input[name=qty_per_case]').val());
+    	data['box_height'] = check_numeric($('input[name=box_height]').val());
+    	data['box_width'] = check_numeric($('input[name=box_width]').val());
+    	data['ti'] = check_numeric($('input[name=ti]').val());
+    	data['hi'] = check_numeric($('input[name=hi]').val());
+    	call_update_service(data);
+    }
+    
+    function save_row(rowId, model_name){
+    	saveRowDT(rowId,fld_options[model_name],uInfo[model_name]['fields'], 
+    			{service_name: 'rest/'+model_name+'/'+rowId+'/',  product: {{ productId }}, soft_delete: false, model_name: model_name},uInfo[model_name]['order'],model_name);
+    }
+    
+    function go_to_admin(){
+    	window.location='/admin_update';
+    }
+
+    
+    </script>
+{% endblock tail_script %}

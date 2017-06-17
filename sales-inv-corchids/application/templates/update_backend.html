@@ -20,6 +20,8 @@
 <script>
 var uInfo = {};
 var model_name = "";
+var old_model = "";
+var model_options = {}
 
 $(document).ready(function() {
     $('#update-select').change(function(){
@@ -30,22 +32,29 @@ $(document).ready(function() {
 
 function add_entry(){
 	var data = {service_name: model_name};
-	addRowDT2(model_name,{},uInfo.fields,data,uInfo.order,false,'update-table');
+	if (uInfo.style == "new_screen"){
+		window.location='/'+uInfo.update_name+'/11111';
+	}
+	else{
+		addRowDT2(model_name,{},uInfo.fields,data,uInfo.order,false,model_name+'-table');	
+	}
+	
 }
 
 function process_selection(){
 	var opt = $('#update-select option:selected').text();
 	get_update_info(opt);
+	old_model = model_name;
 	model_name = opt.toLowerCase();
 }
 
 function edit_row(rowId, modName){
-	editRow(rowId,{},uInfo.fields);
+	editRow(rowId,model_options[model_name],uInfo.fields);
 }
 
 function save_row(rowId, modName){
 	var data = {service_name: 'rest/'+model_name+"/"+rowId+"/"};
-    saveRowDT2(rowId,{},uInfo.fields,data,uInfo.order,model_name,'update-table');
+    saveRowDT2(rowId,model_options[model_name],uInfo.fields,data,uInfo.order,model_name,model_name+'-table');
 }
 
 function adjust_data(inData){
@@ -61,54 +70,73 @@ function del_row(rowId, model_name){
 	
 }
 
-function add_table(update_info){
+function add_table(update_info, update_name){
+	    var old_tableId = old_model+"-table";
+	    var tableId = model_name+"-table";
 	    uInfo = update_info;
-		if (d3.select('[id="update-table"]').empty() == false){
-			d3.select('[id="update-table_wrapper"]').remove();
+		if (d3.select('[id="'+old_tableId+'"]').empty() == false){
+			d3.select('[id="'+old_tableId	+'_wrapper"]').remove();
 		}
 		var tbl = d3.select('[id="update_area"]').append('table');
-		tbl.attr('id','update-table');
+		tbl.attr('id',tableId);
 		tbl.attr('class','table table-sm table-bordered');
 		var row = tbl.append('thead').append('tr');
 		for (var i=0;i<update_info.order.length;i++){
 			row.append('th').text(update_info.order[i]);
 		}
 		row.append('th').text(" -- action -- ");
-		$('#update-table').DataTable( {"scrollY":"600px","scrollCollapse": true,"paging":false} );
+		$('#'+tableId).DataTable( {"scrollY":"600px","scrollCollapse": true,"paging":false} );
 }
 
-function add_data(data_arr, update_info){
-	var dt = $('#update-table').dataTable();
+function add_data(data_arr, update_info, update_name){
+	var model_name = update_name.toLowerCase();
+    var tableId = model_name+"-table";
+	var dt = $('#'+tableId).dataTable();
 	for (var j=0;j<data_arr.length;j++){
 		var element = data_arr[j];
-		var dt_row = [];
-		for (var i=0;i<update_info.order.length;i++){
-			var field = update_info.order[i];
-			var value = "";
-			if (element.hasOwnProperty(field)){
-				value = element[field];
-			}
-			dt_row.push(value);
-		}
-		dt_row.push(""); // for the action column
-		var addid = dt.fnAddData(dt_row);
-		var row = dt.fnGetNodes(addid);
-		$(row).attr('id',element['key']);
-		var children = $(row).children();
-		for (var i=0;i<children.length;i++){
-			var child = children[i];
-			if (i < update_info.order.length){
-				$(child).attr('id',element['key']+"_"+update_info.order[i]);	
-			} else {
-				// action column
-				var cellId = element['key'] + "_buttons";
-				$(child).attr('id',cellId);
-				add_buttons(element['key'], model_name, d3.select('[id="'+cellId+'"]'));
-			}
-			
-		}
+		add_element(element, update_info, update_name,model_name, dt);
 	}
 	//dt.draw();
+}
+
+function add_element(element,update_info, update_name, model_name, dt){
+	var dt_row = [];
+	for (var i=0;i<update_info.order.length;i++){
+		var field = update_info.order[i];
+		var value = "";
+		if (element.hasOwnProperty(field)){
+			value = element[field];
+		}
+		dt_row.push(value);
+	}
+	dt_row.push(""); // for the action column
+	var addid = dt.fnAddData(dt_row);
+	var row = dt.fnGetNodes(addid);
+	$(row).attr('id',element['key']);
+	var children = $(row).children();
+	for (var i=0;i<children.length;i++){
+		var child = children[i];
+		if (i < update_info.order.length){
+			$(child).attr('id',element['key']+"_"+update_info.order[i]);	
+		} else {
+			// action column
+			var cellId = element['key'] + "_buttons";
+			$(child).attr('id',cellId);
+			add_buttons(element['key'], model_name, d3.select('[id="'+cellId+'"]'));
+			if (update_info.style == "new_screen"){
+				d3.select('[id="'+element['key']+"_edit"+'"]')
+				  .on('click',function(){
+					  go_to_window(update_name,element['key']);
+				  });
+			}
+		}
+		
+	}
+}
+
+function go_to_window(model_name, rowId){
+	//set_message(rowId+" clicked");  //Just testing... no need to implement
+	window.location='/'+model_name+'/'+rowId;
 }
 
 function get_model_data(update_name,update_info){
@@ -117,12 +145,20 @@ function get_model_data(update_name,update_info){
 		dataType: "json",
 		success: function(data){
 			console.log(data);
-			add_data(data.list[update_name.toLowerCase()],update_info);
+			add_data(data.list[update_name.toLowerCase()],update_info,update_name);
 		},
 		error: function(data){
 			console.log(data);
 		}
 	});
+}
+
+function add_options(model_name, field_name, options)
+{
+	model_options[model_name][field_name] = []
+    for (var i = 0; i<options.values.length;i++){
+ 		model_options[model_name][field_name].push(options.values[i]['value']+":"+options.values[i]['key']);   	
+    }
 }
 
 function get_update_info(update_name){
@@ -133,7 +169,16 @@ function get_update_info(update_name){
 		success: function(data){
 			if (data.status == 'success'){
 				console.log(data.payload);
-				add_table(data.payload);
+				model_options[update_name.toLowerCase()] = {}
+				if (data.payload.options.length > 0){
+					for (var i=0;i<data.payload.options.length;i++){
+						var m = update_name.toLowerCase();
+						var f = data.payload.options[i]['field_name'];
+						var o = data.payload.options[i]['option_name'];
+						get_option_data(m,f,o,add_options);
+					}
+				}
+				add_table(data.payload, update_name);
 				get_model_data(update_name,data.payload);
 			}else{
 				alert(data.message);

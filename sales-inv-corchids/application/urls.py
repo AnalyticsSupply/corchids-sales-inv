@@ -15,7 +15,7 @@ from application.views.public.public_say_hello import PublicSayHello
 from application.views.admin.admin_main import AdminInvHome,AdminLogout
 #from application.views.admin.admin_list_examples_cached import AdminListExamplesCached
 from application.views.admin.admin_secret import AdminSecret, AdminUpdate
-from application.views.admin.admin_list_weeks import AdminListWeeks,AdminShowWeek,AdminShowPlantWeek
+from application.views.admin.admin_list_weeks import AdminListWeeks,AdminShowWeek,AdminShowPlantWeek, AdminEditCreateProduct
 
 
 # URL dispatch rules
@@ -32,6 +32,7 @@ app.add_url_rule('/sales_inventory', 'inv_home',view_func=AdminInvHome.as_view('
 app.add_url_rule('/weeks', 'list_weeks', view_func=AdminListWeeks.as_view('list_weeks'), methods=['GET', 'POST'])
 app.add_url_rule('/week/<int:week_id>',view_func=AdminShowWeek.as_view('show_week'), methods=['GET','POST'])
 app.add_url_rule('/plantweek/<int:plantgrow_id>',view_func=AdminShowPlantWeek.as_view("show_plantweek"), methods=['GET','POST'])
+app.add_url_rule('/Product/<int:product_id>',view_func=AdminEditCreateProduct.as_view("edit_product"), methods=['GET','POST'])
 app.add_url_rule('/admin_only', 'admin_only', view_func=AdminSecret.as_view('admin_only'), methods=['GET', 'POST'])
 app.add_url_rule('/admin_update', 'admin_update',view_func=AdminUpdate.as_view('admin_update'), methods=['GET','POST'])
 
