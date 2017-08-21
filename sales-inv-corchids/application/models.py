@@ -18,10 +18,9 @@ def update_model(model_name):
     query = ndb.gql("Select * FROM "+model_name)
     entries = query.fetch()
     for entry in entries:
-        if model_name == "ProductReserve":
-            if entry.num_reserved == 0:
-                entry.soft_delete = True
-        entry.put()
+        if model_name != "ProductReserve":
+            entry.soft_delete = False
+            entry.put()
 
 class NDBBase(ndb.Model):
     added_by = ndb.UserProperty(auto_current_user_add=True)
@@ -209,6 +208,10 @@ class GrowWeek(NDBBase):
     week_number = ndb.IntegerProperty(required=True)
     year = ndb.IntegerProperty(required=True)
     week_monday = ndb.DateProperty()
+   
+    def set_monday_date(self):
+        r = datetime.strptime(str(self.year)+"-"+str(self.week_number) + '-1', "%Y-%W-%w")
+        self.week_monday = r
     
     @property
     def next_week(self):
@@ -228,25 +231,48 @@ class GrowWeek(NDBBase):
     def reserves(self):
         return ProductReserve.query(ndb.AND(ProductReserve.finish_week == self.key, ProductReserve.soft_delete == False))
     
-    
+    @classmethod
+    def set_mondays(cls):
+        entries = GrowWeek.query()
+        for entry in entries:
+            entry.set_monday_date()
+        
     @classmethod
     def create_weeks(cls, start_date, end_date):
         while start_date <= end_date:
             GrowWeek.create_week(start_date)
             start_date = start_date + timedelta(days=1)
+            
+    @classmethod
+    def get_year_week(cls,x):
+        mo = x.month
+        yri = x.year
+        wki = x.isocalendar()[1]
+        if wki == 1 and mo == 12:
+            yri = yri + 1
+   
+        if wki == 52 and mo == 1:
+            yri = yri - 1
+       
+        yr = str(yri).zfill(4)
+        wk = str(wki).zfill(2)
+        return {'year':yr,'week':wk}
     
     @classmethod
     def create_week(cls, indate):
-        wknum = indate.isocalendar()[1]
-        year = indate.year
+        wk_d = GrowWeek.get_year_week(indate)
+        wknum = wk_d[1]
+        year = wk_d[0]
         gw = GrowWeek.query(ndb.AND(GrowWeek.week_number == wknum, GrowWeek.year == year)).get()
         if not gw:
             gw = GrowWeek()
             gw.week_number = wknum
             gw.year = year
-            gw.week_monday = indate - timedelta(days=indate.weekday())
+            gw.set_monday_date()
             gw.put()
         return gw
+    
+    
         
     
     def chk_create(self, din, name, plant):

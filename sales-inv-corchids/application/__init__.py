@@ -8,7 +8,7 @@ import traceback
 from flask_debugtoolbar import DebugToolbarExtension
 from werkzeug.debug import DebuggedApplication
 from flask_sqlalchemy import SQLAlchemy
-from models import Plant, Supplier, update_model
+from models import Plant, Supplier, update_model, GrowWeek
 from standard_models import DBEntry
 
 from google.appengine.api.taskqueue import taskqueue
@@ -152,6 +152,8 @@ def run_dw_task():
     try:
         if runtask == 'newprop':
             update_model(process)
+        elif runtask == 'fix_dates':
+            GrowWeek.set_mondays()
         elif runtask == 'date':
             if process == 'prep':
                 database.set_date()
