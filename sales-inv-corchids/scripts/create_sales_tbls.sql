@@ -30,6 +30,7 @@ CREATE TABLE `plant_reserves` (
   `customer_id` BIGINT NOT NULL,
   `sales_rep` VARCHAR(100) NOT NULL,
   `add_date` DATE NOT NULL,
+  `soft_delete` VARCHAR(1) NOT NULL DEFAULT 'N',
   PRIMARY KEY (`id`)
 ) COMMENT 'Table for plant reserves';
 
@@ -61,6 +62,7 @@ CREATE TABLE `plant_supplies` (
   `add_date` DATE NOT NULL,
   `plant` VARCHAR(40) NOT NULL,
   `plant_id` BIGINT NOT NULL,
+  `soft_delete` VARCHAR(1) NOT NULL DEFAULT 'N',
   PRIMARY KEY (`id`)
 );
 

@@ -28,7 +28,9 @@ def get_reserves(update=True):
     
     for summ in summ_d:
         #getadd_summary(summ['week_id'], summ['plant_id'])
-        PlantGrow.get_plant_wp(summ['week_id'], summ['plant_id']).set_dw_sync()
+        pg = PlantGrow.get_plant_wp(summ['week_id'], summ['plant_id'])
+        if pg:
+            pg.set_dw_sync()
     
     return 0
 
@@ -58,8 +60,9 @@ class PlantReserves(db.Model):
     customer_id = db.Column(db.String(150))
     sales_rep = db.Column(db.String(150))
     add_date = db.Column(db.String(150))
+    soft_delete = db.Column(db.String(1))
     
-    def update(self, plant, product, plant_id, product_id, num_reserved, week_id, customer, customer_id, sales_rep, add_date):
+    def update(self, plant, product, plant_id, product_id, num_reserved, week_id, customer, customer_id, sales_rep, add_date, soft_delete):
         self.plant=plant
         self.product=product
         self.plant_id=plant_id
@@ -70,8 +73,9 @@ class PlantReserves(db.Model):
         self.customer_id=customer_id
         self.sales_rep=sales_rep
         self.add_date=add_date.date()
+        self.soft_delete=soft_delete
         
-    def __init__(self, _id, plant, product, plant_id, product_id, num_reserved, week_id, customer, customer_id, sales_rep, add_date):
+    def __init__(self, _id, plant, product, plant_id, product_id, num_reserved, week_id, customer, customer_id, sales_rep, add_date,soft_delete):
         self.id = _id
         self.plant=plant
         self.product=product
@@ -83,6 +87,7 @@ class PlantReserves(db.Model):
         self.customer_id=customer_id
         self.sales_rep=sales_rep
         self.add_date=add_date.date()
+        self.soft_delete=soft_delete
 
 def set_next_2yrs():
     dt = datetime.now()
@@ -164,8 +169,9 @@ class PlantSupplies(db.Model):
     add_date = db.Column(db.String(150))
     plant = db.Column(db.String(150))
     plant_id = db.Column(db.String(150))
+    soft_delete = db.Column(db.String(1))
     
-    def update(self,supplier, supplier_id, forecast, week_id, add_date, plant, plant_id):
+    def update(self,supplier, supplier_id, forecast, week_id, add_date, plant, plant_id,soft_delete):
         self.supplier=supplier
         self.supplier_id=supplier_id
         self.forecast=0 if not forecast else forecast
@@ -173,8 +179,9 @@ class PlantSupplies(db.Model):
         self.add_date=add_date.date()
         self.plant=plant
         self.plant_id=plant_id
+        self.soft_delete=soft_delete
         
-    def __init__(self, _id, supplier, supplier_id, forecast, week_id, add_date, plant, plant_id):
+    def __init__(self, _id, supplier, supplier_id, forecast, week_id, add_date, plant, plant_id,soft_delete):
         self.id = _id
         self.supplier=supplier
         self.supplier_id=supplier_id
@@ -183,6 +190,7 @@ class PlantSupplies(db.Model):
         self.add_date=add_date.date()
         self.plant=plant
         self.plant_id=plant_id
+        self.soft_delete=soft_delete
 
 def set_summary():
     lstup = LastUpdate.get_last_update("PlantSummary")

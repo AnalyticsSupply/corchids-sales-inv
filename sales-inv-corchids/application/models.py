@@ -208,11 +208,7 @@ class GrowWeek(NDBBase):
     week_number = ndb.IntegerProperty(required=True)
     year = ndb.IntegerProperty(required=True)
     week_monday = ndb.DateProperty()
-   
-    def set_monday_date(self):
-        r = datetime.strptime(str(self.year)+"-"+str(self.week_number) + '-1', "%Y-%W-%w")
-        self.week_monday = r
-    
+
     @property
     def next_week(self):
         nxtWk = self.week_monday + timedelta(days=7)
@@ -233,42 +229,55 @@ class GrowWeek(NDBBase):
     
     @classmethod
     def set_mondays(cls):
+        startMonday = "01/04/2016"
+        endMonday = "01/01/2026"
+        start = datetime.strptime(startMonday,"%M/%d/%Y")
+        end = datetime.strptime(endMonday,"%M/%d/%Y")
+        dt = start + timedelta(days=7)
+        week_dates = {start.isocalendar()[0]:{start.isocalendar()[1]:start}}
+        
+        wkd = week_dates.get(dt.isocalendar()[0],{})
+        wkd[dt.isocalendar()[1]] = dt
+        week_dates[dt.isocalendar()[0]] = wkd
+        print("Starting date loop")
+        while dt < end:
+            wkd = week_dates.get(dt.isocalendar()[0],{})
+            wkd[dt.isocalendar()[1]] = dt
+            week_dates[dt.isocalendar()[0]] = wkd
+            dt = dt + timedelta(days=7)
+        print("end date loop")
+        
+        print("Starting grow week loop")
         entries = GrowWeek.query()
         for entry in entries:
-            entry.set_monday_date()
-        
-    @classmethod
-    def create_weeks(cls, start_date, end_date):
-        while start_date <= end_date:
-            GrowWeek.create_week(start_date)
-            start_date = start_date + timedelta(days=1)
+            md = week_dates[entry.year][entry.week_number]
+            entry.week_monday = md + timedelta(days=1)
+            entry.update_ndb()
+        print("Ending Grow Week Loop")
             
     @classmethod
-    def get_year_week(cls,x):
-        mo = x.month
-        yri = x.year
-        wki = x.isocalendar()[1]
-        if wki == 1 and mo == 12:
-            yri = yri + 1
-   
-        if wki == 52 and mo == 1:
-            yri = yri - 1
-       
-        yr = str(yri).zfill(4)
-        wk = str(wki).zfill(2)
-        return {'year':yr,'week':wk}
+    def create_weeks(cls, start_date, end_date):
+        while start_date.isocalendar()[2] != 1:
+            start_date = start_date + timedelta(days=-1)
+            
+        while start_date <= end_date:
+            GrowWeek.create_week(start_date)
+            start_date = start_date + timedelta(days=7)
+            
     
     @classmethod
     def create_week(cls, indate):
-        wk_d = GrowWeek.get_year_week(indate)
-        wknum = wk_d[1]
-        year = wk_d[0]
+        while indate.isocalendar()[2] != 1:
+            indate = indate + timedelta(days=-1)
+            
+        wknum = indate.isocalendar()[1]
+        year = indate.isocalendar()[0]
         gw = GrowWeek.query(ndb.AND(GrowWeek.week_number == wknum, GrowWeek.year == year)).get()
         if not gw:
             gw = GrowWeek()
             gw.week_number = wknum
             gw.year = year
-            gw.set_monday_date()
+            gw.week_monday = indate
             gw.put()
         return gw
     
@@ -355,7 +364,7 @@ class PlantGrow(NDBBase):
     
     @property
     def supplies(self):
-        return PlantGrowSupply.query(ndb.AND(PlantGrowSupply.plantgrow == self.key, PlantGrowSupply.forecast > 0))
+        return PlantGrowSupply.query(ndb.AND(ndb.AND(PlantGrowSupply.plantgrow == self.key, PlantGrowSupply.forecast > 0), PlantGrowSupply.soft_delete == False))
     
     @property
     def forecasts(self):
@@ -545,6 +554,7 @@ class PlantGrowSupply(NDBBase):
         plant = pg.plant.get()
         pgsdb['plant'] = plant.name
         pgsdb['plant_id'] = plant.id
+        pgsdb['soft_delete'] = "Y" if pgs.soft_delete and (True == pgs.soft_delete) else "N"
         return pgsdb
          
 class Concept(NDBBase):
@@ -729,13 +739,21 @@ class ProductReserve(NDBBase):
         prdb['plant_id'] = plant.id
         prdb['product_id'] = product.id
         prdb['num_reserved'] = pr.num_reserved
-        week = pr.finish_week.get()
-        prdb['week_id'] = week.id
+        if pr.finish_week:
+            week = pr.finish_week.get()
+            prdb['week_id'] = week.id
+        else:
+            gw = GrowWeek.query(ndb.AND(GrowWeek.week_number==34,GrowWeek.year==2017)).get()
+            print("No weeK??")
+            pr.finish_week = gw.key
+            pr.put()
+            prdb['week_id'] = gw.id
         customer = pr.customer.get()
         prdb['customer'] = customer.customer_name
         prdb['customer_id'] = customer.id
         prdb['sales_rep'] = pr.added_by
         prdb['add_date'] = pr.timestamp
+        prdb['soft_delete'] = "Y" if pr.soft_delete and (pr.soft_delete == True) else "N"
         return prdb
     
     @classmethod

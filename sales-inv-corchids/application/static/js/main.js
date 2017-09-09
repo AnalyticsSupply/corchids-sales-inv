@@ -48,8 +48,8 @@ function add_button_method(parent, child, action,text){
 	add_button(form,text);
 }
 function clear_create_rows(wk_summ){
-	var tbody = d3.select("tbody#summary")
-    
+	var tbody = d3.select("tbody#summary");
+    tbody.selectAll('tr').remove();
     wk_summ.forEach(function (row){
     	var tr = tbody.append('tr');
     	
@@ -136,8 +136,7 @@ function update_plantgrow(plt, wk, wnt, act,msg){
 
 function call_wk_summ(year, wk_num)
 {
-	var tbody = d3.select("tbody#summary");
-    tbody.selectAll('tr').remove();
+	
 	
 	$(".col-xs-12.col-md-8 h3").html("Week #"+wk_num+", in "+year+".");
 	  var api = "/week_summary/"+year+"/"+wk_num;

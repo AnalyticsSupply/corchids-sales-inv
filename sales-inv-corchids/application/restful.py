@@ -12,6 +12,7 @@ from google.appengine.ext import ndb
 
 from application.views.admin import authen
 from datetime import datetime
+from datetime import timedelta
 from application.rest import DispatcherException, Dispatcher
 from flask import make_response,jsonify
 
@@ -203,6 +204,13 @@ def get_week_summary(year, week_num):
     try:
         day =  str(year)+'-'+str(week_num)+'-1'
         dt = datetime.strptime(day, '%Y-%W-%w')
+        
+        if dt.isocalendar()[1] > week_num:
+            dt = dt + timedelta(days=-7)
+            
+        if dt.isocalendar()[1] < week_num:
+            dt = dt + timedelta(days=7)
+            
         #qry = GrowWeek.query(GrowWeek.week_monday == dt)
         week = GrowWeek.create_week(dt)
         resp = {}

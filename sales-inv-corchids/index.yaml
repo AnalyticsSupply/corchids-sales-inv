@@ -30,6 +30,12 @@ indexes:
   - name: plantgrow
   - name: forecast
 
+- kind: PlantGrowSupply
+  properties:
+  - name: plantgrow
+  - name: soft_delete
+  - name: forecast
+
 - kind: ProductPlant
   properties:
   - name: product
@@ -45,4 +51,4 @@ indexes:
   properties:
   - name: product
   - name: finish_week
-  - name: num_reserved
+  - name: soft_delete

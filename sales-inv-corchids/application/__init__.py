@@ -144,7 +144,7 @@ def process_dw_task():
     
     return jsonify({'task_name':task.name,'task_eta':task.eta})
 
-@app.route('/run_dw_task',methods=['POST'])
+@app.route('/run_dw_task',methods=['POST','GET'])
 def run_dw_task():
     runtask = request.values.get('task')
     process = request.values.get("process") # either prep or run
