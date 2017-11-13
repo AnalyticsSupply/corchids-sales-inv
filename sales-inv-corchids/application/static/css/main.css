@@ -16,6 +16,10 @@ body {
     background-color: #f4e6da;
 }
 
+body.wait, body.wait *{
+ cursor: wait !important;   
+}
+
 .btn {
     cursor: pointer;
 }

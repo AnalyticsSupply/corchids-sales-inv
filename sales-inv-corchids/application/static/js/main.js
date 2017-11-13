@@ -48,6 +48,7 @@ function add_button_method(parent, child, action,text){
 	add_button(form,text);
 }
 function clear_create_rows(wk_summ){
+	$("body").toggleClass("wait");
 	var tbody = d3.select("tbody#summary");
     tbody.selectAll('tr').remove();
     wk_summ.forEach(function (row){
@@ -137,7 +138,7 @@ function update_plantgrow(plt, wk, wnt, act,msg){
 function call_wk_summ(year, wk_num)
 {
 	
-	
+	$("body").toggleClass("wait");
 	$(".col-xs-12.col-md-8 h3").html("Week #"+wk_num+", in "+year+".");
 	  var api = "/week_summary/"+year+"/"+wk_num;
 	  $.getJSON( api)
@@ -331,9 +332,19 @@ function editRow(rowId, options, fields){
 		    	//var id = data.key;
 		    	set_message("Row Added Successfully");
 		    	convert_save(rowId,data,model_name);
-		    }
-		    
-			
+		    },
+		    error: function(data){
+		    	console.log(data);
+		    	set_message("ROW ADD ERROR!!!");
+		        //var json = $.parseJSON(data);
+		        //alert(json.error);
+		    	},
+		    failure: function(data){
+		        console.log(data);
+		        set_message("ROW ADD FAILURE!!!");
+		    	//var json = $.parseJSON(data);
+		        //alert(json.error);
+		        }
 		});
 	}
 	function save_note(pg_id, note_info,process_func){
