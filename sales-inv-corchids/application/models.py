@@ -126,7 +126,29 @@ class LastUpdate(NDBBase):
     
     def update(self):
         self.last_updated = datetime.now()
-        self.put()    
+        self.put()
+
+class LoggingMessages(NDBBase):
+    message = ndb.TextProperty(required=True)
+    msg_type = ndb.StringProperty()
+
+    @classmethod
+    def get_msg_type(cls, instr):
+        if instr.lower().startswith("error"):
+            return "ERROR"
+        if instr.lower().startswith("warn"):
+            return "WARNING"
+        if instr.lower().startswith("info"):
+            return "INFORMATIONAL"
+        return instr
+
+    @classmethod
+    def create_log_message(cls, msg, msg_type):
+        mType = LoggingMessages.get_msg_type(msg_type)
+        lm = LoggingMessages()
+        lm.message = msg
+        lm.msg_type = mType
+        return lm
 
 class Plant(NDBBase):
     """ Plants for which we have forecasted values"""

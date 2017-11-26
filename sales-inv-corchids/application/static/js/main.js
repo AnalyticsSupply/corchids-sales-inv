@@ -128,10 +128,12 @@ function update_plantgrow(plt, wk, wnt, act,msg){
 	     },
 	    error: function(data){
 	        var json = $.parseJSON(data);
-	        alert(json.error);},
+	        alert(json.error);
+	        log_error("update_plantgrow: "+data.responseText,"error");},
 	    failure: function(data){
 	        var json = $.parseJSON(data);
-	        alert(json.error);}
+	        alert(json.error);
+	        log_error("update_plantgrow: "+data.responseText,"error")}
 	});
 }
 
@@ -297,13 +299,32 @@ function editRow(rowId, options, fields){
 		     },
 		     error: function(data){
 			        console.log(data.responseText);
-			        //alert(json.error);},
+			        log_error("call_update_service ("+JSON.stringify(update_fields)+"): \n"+data.responseText,"error");
 			    },
 			    failure: function(data){
 			        console.log(data.responseText);
-			        //alert(json.error);
+			        log_error("call_update_service ("+JSON.stringify(update_fields)+"): \n"+data.responseText,"error");
 			        }
 		});
+	}
+
+	function log_error(message, msg_type){
+		var updates = {};
+		updates['message'] = message;
+		updates['msg_type'] = msg_type;
+		$.ajax({
+			type: "POST",
+			url: "/log_message",
+			headers: {
+		        Accept : "application/json; charset=utf-8",
+		        "Content-Type": "application/json; charset=utf-8"
+		    },
+		    data: JSON.stringify(updates),
+		    dataType: "json",
+		    success: function(data){console.log("error logged!!")},
+		    error: function(data){console.log(data);},
+		    failure: function(data){console.log(data);}
+		})
 	}
 	
 	function call_add_service(model_name, update_fields,fields){
@@ -335,15 +356,13 @@ function editRow(rowId, options, fields){
 		    },
 		    error: function(data){
 		    	console.log(data);
-		    	set_message("ROW ADD ERROR!!!");
-		        //var json = $.parseJSON(data);
-		        //alert(json.error);
+		        set_message("ROW ADD ERROR!!!");
+		        log_error("call_add_service ("+JSON.stringify(inData)+"): \n"+data.responseText,"error");
 		    	},
 		    failure: function(data){
 		        console.log(data);
-		        set_message("ROW ADD FAILURE!!!");
-		    	//var json = $.parseJSON(data);
-		        //alert(json.error);
+		    	set_message("ROW ADD FAILURE!!!");
+		    	log_error("call_add_service ("+JSON.stringify(inData)+"): \n"+data.responseText,"error");
 		        }
 		});
 	}
@@ -359,11 +378,11 @@ function editRow(rowId, options, fields){
 		     },
 		    error: function(data){
 			    console.log(data.responseText);
-			     //alert(json.error);},
+			     log_error("save_note ("+JSON.stringify(note_info)+"): \n"+data.responseText,"error");
 			    },
 		    failure: function(data){
 			    console.log(data.responseText);
-			    //alert(json.error);
+			    log_error("save_note ("+JSON.stringify(note_info)+"): \n"+data.responseText,"error");
 			    }
 		});
 	}
@@ -422,12 +441,10 @@ function editRow(rowId, options, fields){
 				d3.select('[id="'+wk_nm+'"]').text(data.availability);
 			},
 		     error: function(data){
-			        console.log(data.responseText);
-			        //alert(json.error);},
+			       // log_error("get_availability: "+data.responseText,"error");
 			    },
 			    failure: function(data){
-			        console.log(data.responseText);
-			        //alert(json.error);
+			       // log_error("get_availability: "+data.responseText,"error");
 			        }
 		})
 	}
@@ -442,11 +459,11 @@ function editRow(rowId, options, fields){
 		     },
 		     error: function(data){
 			        console.log(data.responseText);
-			        //alert(json.error);},
+			        log_error("get_notes: \n"+data.responseText,"error");
 			    },
 			    failure: function(data){
 			        console.log(data.responseText);
-			        //alert(json.error);
+			        log_error("get_notes: \n"+data.responseText,"error");
 			        }
 		})
 	}
@@ -461,11 +478,11 @@ function editRow(rowId, options, fields){
 		     },
 		     error: function(data){
 			        console.log(data.responseText);
-			        //alert(json.error);},
+			        log_error("delete_notes: \n"+data.responseText,"error");
 			    },
 			    failure: function(data){
 			        console.log(data.responseText);
-			        //alert(json.error);
+			        log_error("delete_notes: \n"+data.responseText,"error");
 			        }
 		})
 	}
@@ -634,6 +651,7 @@ function editRow(rowId, options, fields){
 			error: function(data){
 				console.log("ERROR!!!!");
 				console.log(data);
+				log_error("get_option_data: \n"+data.responseText,"error");
 			}
 		});
 	}

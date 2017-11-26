@@ -264,6 +264,10 @@ def update_plantweek_entry(inData):
         return jsonify(resp)
     return {'status':'Failed','message':'No valid service found'}
                                                                                                                                     
+@login_required
+def add_logging_message(lMessage, lType):
+    lm = LoggingMessages.create_log_message(lMessage,lType)
+    return jsonify(lm.update_resp())
 
 @login_required
 def notes_wrapper(plantgrow_key=None,note_key=None, note="", method='save'):

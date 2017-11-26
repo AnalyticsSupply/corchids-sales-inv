@@ -128,6 +128,10 @@ def get_options(path):
     r = restful.get_option_field(path, request.values)
     return jsonify(r)
 
+@app.route('/log_message',methods=['GET','POST'])
+def process_add_log_message():
+    uJson = request.get_json()
+    return restful.add_logging_message(uJson['message'],uJson['msg_type'])
 
 @app.route("/test_email", methods=['GET'])
 def send_test_email():
