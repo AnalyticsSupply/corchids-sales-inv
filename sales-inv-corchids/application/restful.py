@@ -5,20 +5,20 @@ Created on Dec 17, 2016
 
 THis is just my way of making the REST stuff work
 '''
-from application.models import Plant,Customer,GrowWeek,Supplier, Concept,PlantGrow,Product,ProductConcept,\
-    ProductReserve,ProductPlant,PlantGrowSupply, PlantGrowNotes, EmailNotifications
+from .models import Plant,Customer,GrowWeek,Supplier, Concept,PlantGrow,Product,ProductConcept,\
+    ProductReserve,ProductPlant,PlantGrowSupply, PlantGrowNotes, EmailNotifications, LoggingMessages
 
 from google.appengine.ext import ndb
 
-from application.views.admin import authen
+from .views.admin import authen
 from datetime import datetime
 from datetime import timedelta
-from application.rest import DispatcherException, Dispatcher
+from .rest import DispatcherException, Dispatcher
 from flask import make_response,jsonify
 
 from exceptions import AttributeError
 import sys, traceback
-from application.decorators import login_required, admin_required
+from .decorators import login_required, admin_required
 
 Dispatcher.base_url = "/rest"
 Dispatcher.add_models({"plant": Plant,'productplant':ProductPlant,
