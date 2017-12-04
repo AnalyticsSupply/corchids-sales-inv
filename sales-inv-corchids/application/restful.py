@@ -5,7 +5,7 @@ Created on Dec 17, 2016
 
 THis is just my way of making the REST stuff work
 '''
-from .models import Plant,Customer,GrowWeek,Supplier, Concept,PlantGrow,Product,ProductConcept,\
+from application.models import Plant,Customer,GrowWeek,Supplier, Concept,PlantGrow,Product,ProductConcept,\
     ProductReserve,ProductPlant,PlantGrowSupply, PlantGrowNotes, EmailNotifications, LoggingMessages
 
 from google.appengine.ext import ndb
@@ -13,12 +13,12 @@ from google.appengine.ext import ndb
 from .views.admin import authen
 from datetime import datetime
 from datetime import timedelta
-from .rest import DispatcherException, Dispatcher
+from application.rest import DispatcherException, Dispatcher
 from flask import make_response,jsonify
 
 from exceptions import AttributeError
 import sys, traceback
-from .decorators import login_required, admin_required
+from application.decorators import login_required, admin_required
 
 Dispatcher.base_url = "/rest"
 Dispatcher.add_models({"plant": Plant,'productplant':ProductPlant,
